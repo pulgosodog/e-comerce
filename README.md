@@ -30,8 +30,8 @@ La app arranca en http://localhost:3000 (puedes cambiar el puerto con `PORT`).
 
 ## Crear/Promover usuario admin
 Ejemplo rápido (cambia email/clave):
-```Usa un el editor Db browser para sqlite
-```
+-Crea tu usuario.
+-Por seguridad, manualmente cambia el role a "admin". (El uso de DB Browser for Sqlite es recomendado)
 
 ## Funcionalidades clave
 - Catálogo con categorías, ofertas (`/deals`), búsqueda por nombre/marca (`/search`).
