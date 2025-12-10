@@ -8,7 +8,7 @@ Proyecto demo de e-commerce con Node.js, Express, EJS y SQLite/Sequelize. Incluy
 
 ## Clonar desde GitHub
 ```bash
-git clone <url-del-repo>.git
+git clone https://github.com/pulgosodog/e-comerce)
 cd e-commerce
 ```
 
