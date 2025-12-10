@@ -1,0 +1,35 @@
+<div class="max-width" style="max-width:1100px;margin:20px auto;padding:20px">
+  <h2>Panel Admin — Usuarios</h2>
+  <% if (!users || !users.length) { %>
+    <p>No hay usuarios.</p>
+  <% } else { %>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <% users.forEach(u => { %>
+        <div class="product-card" style="padding:12px;display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <strong>ID: <%= u.id %></strong>
+              <div class="muted">Correo: <%= u.email %></div>
+            </div>
+            <div>
+              <div class="muted">Rol actual: <%= u.role %></div>
+            </div>
+          </div>
+          <form method="post" action="/admin/users/<%= u.id %>" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:center">
+            <input class="form-input" type="text" name="name" value="<%= u.name || '' %>" placeholder="Nombre" />
+            <input class="form-input" type="email" name="email" value="<%= u.email || '' %>" placeholder="Email" />
+            <select class="form-input" name="role">
+              <option value="user" <%= u.role === 'user' ? 'selected' : '' %>>user</option>
+              <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>admin</option>
+            </select>
+            <input class="form-input" type="password" name="new_password" placeholder="Nuevo password (opcional)" />
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" type="submit">Guardar</button>
+              <a href="mailto:<%= u.email %>" class="btn btn-outline">Email</a>
+            </div>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

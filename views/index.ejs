@@ -1,0 +1,50 @@
+<section class="hero" id="hero-carousel">
+  <div class="carousel">
+    <% (slides || []).forEach(function(s, idx){ %>
+      <div class="carousel-slide" data-id="<%= s.slide_id %>">
+        <div class="hero-text">
+          <h2><%= s.title || '' %></h2>
+          <p><%= s.subtitle || '' %></p>
+          <% if (s.button_text) { %>
+            <a class="cta" href="<%= s.button_link || '#' %>"><%= s.button_text %></a>
+          <% } %>
+        </div>
+        <div class="hero-media">
+          <img class="hero-image" src="<%= s.image_url || '/images/placeholder.png' %>" alt="slide image" />
+        </div>
+        <% if (currentUser && currentUser.role === 'admin') { %>
+          <button class="hero-edit" data-id="<%= s.slide_id %>" title="Editar slide">✎</button>
+        <% } %>
+      </div>
+    <% }) %>
+  </div>
+  <button class="carousel-prev" aria-label="Anterior">‹</button>
+  <button class="carousel-next" aria-label="Siguiente">›</button>
+</section>
+
+<section class="product-listing">
+  <div class="controls">
+    <div class="left">
+      <h3><%= selectedCategory ? selectedCategory.name : 'Productos' %></h3>
+    </div>
+    <div class="sort">
+      <form id="sort-form" method="get" action="/">
+        <% if (selectedCategory) { %>
+          <input type="hidden" name="category" value="<%= selectedCategory.category_id %>">
+        <% } %>
+        <label style="margin-right:8px">Ordenar por</label>
+        <select name="sort" onchange="this.form.submit()">
+          <option value="">--</option>
+          <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>>Precio: menor-mayor</option>
+          <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>>Precio: mayor-menor</option>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  <div class="cards">
+    <% products.forEach(function(p){ %>
+      <%- include('partials/product_card', { p: p }) %>
+    <% }) %>
+  </div>
+</section>

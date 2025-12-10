@@ -1,0 +1,23 @@
+<article class="product-card" data-product-id="<%= p.product_id %>" data-name="<%- p.name %>" data-brand="<%- p.brand || '' %>" data-sku="<%- p.sku || '' %>" data-price_regular="<%- p.price_regular %>" data-price_sale="<%- p.price_sale || '' %>" data-stock="<%- p.stock || 0 %>" data-category_id="<%- p.category_id || '' %>" data-description="<%- p.description || '' %>">
+  <% if (currentUser && currentUser.role === 'admin') { %>
+    <button class="product-edit" title="Editar producto" aria-label="Editar producto" data-id="<%= p.product_id %>">✎</button>
+  <% } %>
+  <a href="/product/<%= p.product_id %>" class="product-link" style="text-decoration:none;color:inherit">
+    <img src="<%= p.image_url || '/images/placeholder.png' %>" alt="<%= p.name %>" loading="lazy" width="340" height="160" onerror="this.onerror=null;this.src='/images/placeholder.png';" />
+    <h3><%= p.name %></h3>
+    <p class="brand"><%= p.brand || '' %></p>
+    <p class="price">
+      <% if (p.is_on_sale && p.price_sale) { %>
+        <span class="sale">$<%= p.price_sale %></span>
+        <span class="regular strike">$<%= p.price_regular %></span>
+      <% } else { %>
+        <span class="regular">$<%= p.price_regular %></span>
+      <% } %>
+    </p>
+    <p><%= p.description %></p>
+  </a>
+  <div class="actions">
+    <button class="btn btn-primary add-to-cart" data-product-id="<%= p.product_id %>">Añadir al carrito</button>
+    <a href="/product/<%= p.product_id %>" class="btn btn-outline">Ver detalles</a>
+  </div>
+</article>

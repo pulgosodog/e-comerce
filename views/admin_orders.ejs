@@ -1,0 +1,43 @@
+<div class="max-width" style="max-width:1100px;margin:20px auto;padding:20px">
+  <h2>Panel Admin — Órdenes</h2>
+  <% if (!orders || !orders.length) { %>
+    <p>No hay órdenes todavía.</p>
+  <% } else { %>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <% orders.forEach(o => { %>
+        <div class="product-card" style="padding:12px;display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div>
+              <strong>Orden #<%= o.order_id %></strong>
+              <div class="muted">Usuario: <%= o.user ? o.user.name : '—' %> &lt;<%= o.user ? o.user.email : '—' %>&gt;</div>
+              <div class="muted">Creada: <%= o.created_at.toLocaleString() %></div>
+            </div>
+            <div style="text-align:right">
+              <div><strong>Total:</strong> $<%= o.total %></div>
+              <div class="muted">IVA: $<%= o.tax %></div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px">
+            <h4>Items</h4>
+            <ul>
+              <% (o.items || []).forEach(it => { %>
+                <li><%= it.product ? it.product.name : ('Producto ' + it.product_id) %> — x<%= it.quantity %> — $<%= it.unit_price %></li>
+              <% }) %>
+            </ul>
+          </div>
+
+          <form method="post" action="/admin/orders/<%= o.order_id %>/status" style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <label class="muted">Estado:</label>
+            <select name="status" class="form-input" style="width:200px">
+              <option value="pendiente" <%= o.status === 'pendiente' ? 'selected' : '' %>>Pendiente</option>
+              <option value="procesando" <%= o.status === 'procesando' ? 'selected' : '' %>>Procesando</option>
+              <option value="terminada" <%= o.status === 'terminada' ? 'selected' : '' %>>Terminada</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Actualizar</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

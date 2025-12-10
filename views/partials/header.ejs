@@ -1,0 +1,57 @@
+<header class="site-header">
+  <div class="topbar">
+    <a class="logo" href="/">
+      <img src="/images/logo.png" alt="Logo" onerror="this.onerror=null;this.src='/images/placeholder.png'" loading="lazy" width="120" height="36" />
+    </a>
+
+    <div class="search">
+      <form action="/search" method="get" style="display:flex;flex:1;gap:6px">
+        <input type="text" name="q" placeholder="Buscar productos, marcas y más..." />
+        <button class="btn" type="submit">Buscar</button>
+      </form>
+    </div>
+
+    <div class="nav-actions">
+      <div class="categories">
+        <button id="categories-btn" class="btn">Categorías ▾</button>
+        <div id="categories-dropdown" class="dropdown"></div>
+      </div>
+
+      <a href="/deals" class="btn">Ofertas</a>
+
+      <% if (!currentUser) { %>
+        <a href="/login" class="btn">Login</a>
+        <a href="/register" class="btn">Registro</a>
+      <% } else { %>
+        <a href="/orders" class="btn">Órdenes</a>
+        <% if (currentUser.role === 'admin') { %>
+          <a href="/admin/users" class="btn">Editar usuarios</a>
+        <% } %>
+        <form method="post" action="/auth/logout" style="display:inline">
+          <button type="submit" class="btn">Cerrar sesión</button>
+        </form>
+      <% } %>
+
+      <a href="/cart" id="cart-link" class="icon" title="Carrito">🛒 <span id="cart-count" data-server-count="<%= cartCount %>"><%= cartCount %></span></a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('categories-btn');
+      const dd = document.getElementById('categories-dropdown');
+      btn.addEventListener('click', async () => {
+        if (!dd.innerHTML.trim() || dd.style.display === 'none') {
+          const res = await fetch('/categories/list');
+          const cats = await res.json();
+          dd.innerHTML = cats.map(c => `<a href="/?category=${c.category_id}" style="display:block;padding:6px 0;color:#222;text-decoration:none">${c.name}</a>`).join('');
+          dd.style.display = 'block';
+        } else dd.style.display = 'none';
+      });
+      // click outside closes dropdown
+      document.addEventListener('click', (ev) => {
+        if (!ev.target.closest('.categories')) dd.style.display = 'none';
+      });
+    });
+  </script>
+</header>

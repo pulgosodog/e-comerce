@@ -1,0 +1,16 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo"><img class="logo" src="/images/logo.png" alt=""></div>
+    <h2>Crea tu cuenta</h2>
+    <% if (typeof error !== 'undefined') { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+    <form method="post" action="/auth/register" class="auth-form">
+      <input class="form-input" type="text" name="name" placeholder="Nombre completo" required />
+      <input class="form-input" type="email" name="email" placeholder="Correo electrónico" required />
+      <input class="form-input" type="password" name="password" placeholder="Contraseña" required />
+      <button class="btn btn-primary" type="submit">Crear cuenta</button>
+      <div class="muted" style="margin-top:8px;font-size:13px">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></div>
+    </form>
+  </div>
+</div>

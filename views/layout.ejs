@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>E-commerce</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <%- include('partials/header') %>
+    <main>
+      <%- body %>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-inner">Hecho por Gabriel Yrigoyen para la clase de Interfaces Gráficas de UNICIT 2025</div>
+    </footer>
+    <script src="/js/cart.js"></script>
+    <script src="/js/carousel.js"></script>
+    <% if (currentUser && currentUser.role === 'admin') { %>
+      <!-- Admin floating add button and modal -->
+      <button id="admin-add-btn" class="fab" title="Agregar producto">+</button>
+      <div id="admin-modal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+          <button class="modal-close" id="admin-modal-close">×</button>
+          <h3>Agregar producto</h3>
+          <form id="admin-add-form">
+            <input name="name" class="form-input" placeholder="Nombre" required />
+            <input name="brand" class="form-input" placeholder="Marca" />
+            <select name="category_id" class="form-input" id="admin-category-select">
+              <option value="">Selecciona categoría</option>
+            </select>
+            <input name="sku" class="form-input" placeholder="SKU" />
+            <input name="price_regular" class="form-input" placeholder="Precio" type="number" step="0.01" />
+            <input name="price_sale" class="form-input" placeholder="Precio de oferta (opcional)" type="number" step="0.01" />
+            <input name="stock" class="form-input" placeholder="Stock" type="number" />
+            <textarea name="description" class="form-input" placeholder="Descripción"></textarea>
+            <input type="file" name="image" accept="image/*" />
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-primary" type="submit">Agregar</button>
+              <button type="button" class="btn btn-outline" id="admin-cancel">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <script src="/js/admin.js"></script>
+      <!-- Hero edit modal -->
+      <div id="admin-hero-modal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+          <button class="modal-close" id="admin-hero-close">×</button>
+          <h3>Editar slide</h3>
+          <form id="admin-hero-form" enctype="multipart/form-data">
+            <input type="hidden" name="slide_id" />
+            <input name="title" class="form-input" placeholder="Título" />
+            <textarea name="subtitle" class="form-input" placeholder="Subtítulo"></textarea>
+            <input name="button_text" class="form-input" placeholder="Texto del botón" />
+            <input name="button_link" class="form-input" placeholder="Link del botón (https://...)" />
+            <input type="file" name="image" accept="image/*" />
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-primary" type="submit">Guardar</button>
+              <button type="button" class="btn btn-outline" id="admin-hero-cancel">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <script src="/js/admin-hero.js"></script>
+    <% } %>
+  </body>
+</html>
