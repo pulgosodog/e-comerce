@@ -1,13 +1,18 @@
 <header class="site-header">
   <div class="topbar">
+    <button id="mobile-menu-toggle" class="mobile-menu-toggle icon" aria-label="Abrir menú">☰</button>
+
     <a class="logo" href="/">
       <img src="/images/logo.png" alt="Logo" onerror="this.onerror=null;this.src='/images/placeholder.png'" loading="lazy" width="120" height="36" />
     </a>
 
     <div class="search">
-      <form action="/search" method="get" style="display:flex;flex:1;gap:6px">
+      <form action="/search" method="get" class="search-form">
         <input type="text" name="q" placeholder="Buscar productos, marcas y más..." />
-        <button class="btn" type="submit">Buscar</button>
+        <button class="btn search-btn" type="submit" aria-label="Buscar">
+          <span class="search-btn-text">Buscar</span>
+          <span class="search-btn-icon">🔍</span>
+        </button>
       </form>
     </div>
 
@@ -36,10 +41,69 @@
     </div>
   </div>
 
+  <div id="mobile-menu-overlay" class="mobile-menu-overlay" aria-hidden="true">
+    <div class="mobile-menu-panel">
+      <button id="mobile-menu-close" class="mobile-menu-close" aria-label="Cerrar menú">×</button>
+      <a class="mobile-menu-logo" href="/">
+        <img src="/images/logo.png" alt="Logo" onerror="this.onerror=null;this.src='/images/placeholder.png'" loading="lazy" width="120" height="36" />
+      </a>
+      <nav class="mobile-menu-list">
+        <button id="mobile-categories-btn" class="mobile-menu-item" type="button">Categorías</button>
+        <div id="mobile-categories-list" class="mobile-categories-list"></div>
+        <a href="/deals" class="mobile-menu-item">Ofertas</a>
+        <% if (!currentUser) { %>
+          <a href="/login" class="mobile-menu-item">Login</a>
+          <a href="/register" class="mobile-menu-item">Registro</a>
+        <% } else { %>
+          <a href="/orders" class="mobile-menu-item">Órdenes</a>
+          <% if (currentUser.role === 'admin') { %>
+            <a href="/admin/users" class="mobile-menu-item">Editar usuarios</a>
+          <% } %>
+          <form method="post" action="/auth/logout" style="display:inline">
+            <button type="submit" class="mobile-menu-item">Cerrar sesión</button>
+          </form>
+        <% } %>
+        <a href="/cart" class="mobile-menu-item">Carrito</a>
+      </nav>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const btn = document.getElementById('categories-btn');
       const dd = document.getElementById('categories-dropdown');
+      const mobileToggle = document.getElementById('mobile-menu-toggle');
+      const mobileOverlay = document.getElementById('mobile-menu-overlay');
+      const mobileClose = document.getElementById('mobile-menu-close');
+      const mobileCategoriesBtn = document.getElementById('mobile-categories-btn');
+      const mobileCategoriesList = document.getElementById('mobile-categories-list');
+
+      const loadCategories = async (container) => {
+        if (!container.innerHTML.trim()) {
+          const res = await fetch('/categories/list');
+          const cats = await res.json();
+          container.innerHTML = cats.map(c => `<a href="/?category=${c.category_id}">${c.name}</a>`).join('');
+        }
+        const isOpen = container.classList.contains('open');
+        if (isOpen) {
+          container.style.maxHeight = '0px';
+          container.classList.remove('open');
+          const onTransitionEnd = () => {
+            container.style.display = 'none';
+            container.removeEventListener('transitionend', onTransitionEnd);
+          };
+          container.addEventListener('transitionend', onTransitionEnd);
+        } else {
+          container.style.display = 'flex';
+          const height = container.scrollHeight;
+          container.style.maxHeight = '0px';
+          requestAnimationFrame(() => {
+            container.classList.add('open');
+            container.style.maxHeight = height + 'px';
+          });
+        }
+      };
+
       btn.addEventListener('click', async () => {
         if (!dd.innerHTML.trim() || dd.style.display === 'none') {
           const res = await fetch('/categories/list');
@@ -48,7 +112,14 @@
           dd.style.display = 'block';
         } else dd.style.display = 'none';
       });
-      // click outside closes dropdown
+
+      mobileCategoriesBtn.addEventListener('click', () => loadCategories(mobileCategoriesList));
+      mobileToggle.addEventListener('click', () => mobileOverlay.setAttribute('aria-hidden', 'false'));
+      mobileClose.addEventListener('click', () => mobileOverlay.setAttribute('aria-hidden', 'true'));
+      mobileOverlay.addEventListener('click', (ev) => {
+        if (ev.target === mobileOverlay) mobileOverlay.setAttribute('aria-hidden', 'true');
+      });
+
       document.addEventListener('click', (ev) => {
         if (!ev.target.closest('.categories')) dd.style.display = 'none';
       });

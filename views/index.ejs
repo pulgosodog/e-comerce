@@ -32,9 +32,9 @@
         <% if (selectedCategory) { %>
           <input type="hidden" name="category" value="<%= selectedCategory.category_id %>">
         <% } %>
-        <label style="margin-right:8px">Ordenar por</label>
+        <label style="margin-right:8px"></label>
         <select name="sort" onchange="this.form.submit()">
-          <option value="">--</option>
+          <option value="">Ordenar por:</option>
           <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>>Precio: menor-mayor</option>
           <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>>Precio: mayor-menor</option>
         </select>
