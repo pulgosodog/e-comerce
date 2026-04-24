@@ -1,4 +1,4 @@
-ñdocument.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('admin-add-btn');
   const modal = document.getElementById('admin-modal');
   const closeBtn = document.getElementById('admin-modal-close');

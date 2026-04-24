@@ -69,9 +69,19 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false;
           }, 1000);
           return;
+        } else {
+          const json = await res.json();
+          alert(json.message || 'Error al agregar al carrito');
+          // Reset button
+          clearInterval(loadingInterval);
+          btn.innerHTML = originalText;
+          btn.style.width = '';
+          btn.style.backgroundColor = '';
+          btn.disabled = false;
+          return;
         }
       } catch (err) {
-        // Ignorar
+        // Ignorar y fallback
       }
       // Fallback a localStorage
       addToLocalCart(pid, 1);

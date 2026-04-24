@@ -369,9 +369,16 @@ app.post('/auth/merge-cart', (req, res) => {
 
 app.post('/cart/add', async (req, res) => {
   const { productId, quantity } = req.body;
-  if (!req.session.cart) req.session.cart = [];
   const q = parseInt(quantity, 10) || 1;
+  const prod = await Product.findByPk(productId);
+  if (!prod) return res.status(404).json({ success: false, message: 'Producto no encontrado' });
+  if (prod.stock < q) return res.status(400).json({ success: false, message: 'Stock insuficiente' });
+
+  if (!req.session.cart) req.session.cart = [];
   const existing = req.session.cart.find((c) => c.productId === productId);
+  const newQty = existing ? existing.quantity + q : q;
+  if (prod.stock < newQty) return res.status(400).json({ success: false, message: 'Stock insuficiente para la cantidad total' });
+
   if (existing) existing.quantity += q;
   else req.session.cart.push({ productId, quantity: q });
   // persist to DB if user logged in
@@ -384,8 +391,7 @@ app.post('/cart/add', async (req, res) => {
         existingItem.quantity += q;
         await existingItem.save();
       } else {
-        const prod = await Product.findByPk(productId);
-        await CartItem.create({ cart_id: cart.cart_id, product_id: productId, quantity: q, unit_price: prod ? prod.price_regular : 0 });
+        await CartItem.create({ cart_id: cart.cart_id, product_id: productId, quantity: q, unit_price: prod.price_regular });
       }
       // reload cart items to return
       const dbItems = await CartItem.findAll({ where: { cart_id: cart.cart_id } });

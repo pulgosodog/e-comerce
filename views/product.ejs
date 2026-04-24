@@ -18,14 +18,19 @@
       <p style="color:#333;margin-top:12px"><%= product.description %></p>
 
       <div style="margin-top:16px;display:flex;gap:12px;align-items:center">
-        <input id="qty" type="number" value="1" min="1" max="<%= product.stock || 1 %>" style="width:80px;padding:8px;border:1px solid #e0e0e0;border-radius:8px" />
-        <button id="add-to-cart-detail" class="btn btn-primary">Añadir al carrito</button>
+        <input id="qty" type="number" value="1" min="1" max="<%= product.stock || 1 %>" style="width:80px;padding:8px;border:1px solid #e0e0e0;border-radius:8px" <%= product.stock <= 0 ? 'disabled' : '' %> />
+        <% if (product.stock > 0) { %>
+          <button id="add-to-cart-detail" class="btn btn-primary">Añadir al carrito</button>
+        <% } else { %>
+          <button id="add-to-cart-detail" class="btn" style="background-color: #ccc; color: #666; cursor: not-allowed;" disabled>No disponible</button>
+        <% } %>
       </div>
     </div>
   </div>
 
   <script>
     document.getElementById('add-to-cart-detail').addEventListener('click', async () => {
+      if (<%= product.stock %> <= 0) return; // Prevent adding if out of stock
       const qty = parseInt(document.getElementById('qty').value, 10) || 1;
       try {
         const res = await fetch('/cart/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: <%= product.product_id %>, quantity: qty }) });
@@ -35,6 +40,10 @@
           const span = document.getElementById('cart-count');
           if (span) span.textContent = json.cart.reduce((s, it) => s + it.quantity, 0);
           alert('Producto agregado al carrito');
+          return;
+        } else {
+          const json = await res.json();
+          alert(json.message || 'Error al agregar al carrito');
           return;
         }
       } catch (err) {
