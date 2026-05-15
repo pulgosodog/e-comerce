@@ -528,4 +528,8 @@ async function start() {
   app.listen(PORT, () => console.log('Server listening on http://localhost:' + PORT));
 }
 
-start();
+if (require.main === module) {
+  start();
+}
+
+module.exports = app;

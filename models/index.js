@@ -1,11 +1,19 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, '..', 'database.sqlite'),
-  logging: false
-});
+const databaseUrl = process.env.DATABASE_URL || null;
+const sequelizeOptions = { logging: false };
+
+const sequelize = databaseUrl
+  ? new Sequelize(databaseUrl, {
+      ...sequelizeOptions,
+      dialectOptions: process.env.DB_SSL === 'true' ? { ssl: { require: true, rejectUnauthorized: false } } : {}
+    })
+  : new Sequelize({
+      dialect: 'sqlite',
+      storage: path.join(__dirname, '..', 'database.sqlite'),
+      ...sequelizeOptions
+    });
 
 const Category = sequelize.define('Category', {
   category_id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
