@@ -24,6 +24,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  window.openAdminEditProduct = async function (product) {
+    if (!form) return;
+    await ensureCategories();
+    form.dataset.mode = 'edit';
+    form.dataset.productId = product.productId || product.product_id || '';
+    form.elements['name'].value = product.name || '';
+    form.elements['brand'].value = product.brand || '';
+    form.elements['sku'].value = product.sku || '';
+    form.elements['price_regular'].value = product.priceRegular || product.price_regular || '';
+    form.elements['price_sale'].value = product.priceSale || product.price_sale || '';
+    form.elements['stock'].value = product.stock || '';
+    form.elements['description'].value = product.description || '';
+    if (categorySelect) {
+      categorySelect.value = product.categoryId || product.category_id || '';
+    }
+    open();
+  };
+
   btn && btn.addEventListener('click', async () => {
     // reset form for new product
     form.reset();
