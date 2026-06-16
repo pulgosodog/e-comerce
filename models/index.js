@@ -49,7 +49,12 @@ const User = sequelize.define('User', {
   name: { type: DataTypes.STRING(255) },
   email: { type: DataTypes.STRING(255), unique: true },
   password_hash: { type: DataTypes.STRING(255) },
-  role: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'user' }
+  role: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'user' },
+  // New contact/location fields
+  address: { type: DataTypes.STRING(500), allowNull: true },
+  phone: { type: DataTypes.STRING(50), allowNull: true },
+  lat: { type: DataTypes.DECIMAL(10,8), allowNull: true },
+  lng: { type: DataTypes.DECIMAL(11,8), allowNull: true }
 }, {
   tableName: 'users',
   timestamps: false

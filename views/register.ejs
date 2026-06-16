@@ -9,8 +9,21 @@
       <input class="form-input" type="text" name="name" placeholder="Nombre completo" required />
       <input class="form-input" type="email" name="email" placeholder="Correo electrónico" required />
       <input class="form-input" type="password" name="password" placeholder="Contraseña" required />
+      <input class="form-input" type="text" name="address" id="address" placeholder="Dirección (opcional)" />
+      <input class="form-input" type="text" name="phone" id="phone" placeholder="Teléfono (opcional)" />
+      <div style="margin-top:8px">
+        <button type="button" id="use-location" class="form-input btn">Usar mi ubicación</button>
+        <span id="loc-status" style="margin-left:8px;font-size:13px;color:#666"></span>
+        <input type="hidden" name="lat" id="lat" />
+        <input type="hidden" name="lng" id="lng" />
+      </div>
+      <div id="map-preview" style="margin-top:12px;display:none;border:1px solid #e0e0e0;padding:6px;"> </div>
+      <div id="cancel-wrap" style="text-align:center;margin-top:8px;display:none;">
+        <button type="button" id="cancel-location" class="form-input btn" style="background:#e74c3c;color:#fff;border:none;max-width:100%;">Cancelar</button>
+      </div>
       <button class="btn btn-primary" type="submit">Crear cuenta</button>
       <div class="muted" style="margin-top:8px;font-size:13px">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></div>
     </form>
+    <script src="/js/register-location.js"></script>
   </div>
 </div>
