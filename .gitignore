@@ -5,21 +5,3 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Env
-.env
-
-# Build / logs / coverage
-coverage/
-dist/
-*.log
-
-# SQLite DB
-/database.sqlite
-/database.sqlite-journal
-
-# Uploads
-/public/images/uploads/
-
-# OS
-.DS_Store
-Thumbs.db

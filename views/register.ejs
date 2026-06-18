@@ -1,16 +1,77 @@
 <div class="auth-wrapper">
   <div class="auth-card">
-    <div class="auth-logo"><img class="logo" src="/images/logo.png" alt=""></div>
+    <div class="auth-logo">
+      <img class="logo" src="/images/logo.png" alt="">
+    </div>
+
     <h2>Crea tu cuenta</h2>
+
     <% if (typeof error !== 'undefined') { %>
       <div class="error"><%= error %></div>
     <% } %>
+
     <form method="post" action="/auth/register" class="auth-form">
-      <input class="form-input" type="text" name="name" placeholder="Nombre completo" required />
-      <input class="form-input" type="email" name="email" placeholder="Correo electrónico" required />
-      <input class="form-input" type="password" name="password" placeholder="Contraseña" required />
+      <input
+        class="form-input"
+        type="text"
+        name="name"
+        placeholder="Nombre completo"
+        required
+      />
+
+      <input
+        class="form-input"
+        type="email"
+        name="email"
+        placeholder="Correo electrónico"
+        required
+      />
+
+      <input
+        class="form-input"
+        type="tel"
+        name="phone"
+        placeholder="Número de teléfono"
+        required
+        pattern="[0-9]+"
+        inputmode="numeric"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+      />
+
+      <input
+        class="form-input"
+        type="text"
+        name="full_address"
+        placeholder="Dirección completa"
+        required
+      />
+
+    <input
+      class="form-input"
+      type="password"
+      name="password"
+      placeholder="Contraseña"
+      required
+      oninput="this.value=this.value.replace(/\s/g,'')"
+    />
+
+    <input
+      class="form-input"
+      type="password"
+      name="confirm_password"
+      placeholder="Confirmar contraseña"
+      required
+      oninput="this.value=this.value.replace(/\s/g,'')"
+    />
+
+      <input type="hidden" name="latitude" id="latitude" />
+      <input type="hidden" name="longitude" id="longitude" />
+
       <button class="btn btn-primary" type="submit">Crear cuenta</button>
-      <div class="muted" style="margin-top:8px;font-size:13px">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></div>
+
+      <div class="muted" style="margin-top:8px;font-size:13px">
+        ¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
+      </div>
     </form>
   </div>
 </div>

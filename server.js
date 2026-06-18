@@ -5,7 +5,7 @@ const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const methodOverride = require('method-override');
 const { Op } = require('sequelize');
-const { sequelize, Product, Category, User, Cart, CartItem, Order, OrderItem, HeroSlide } = require('./models');
+const { sequelize, Product, Category, User, UserAddress, Cart, CartItem, Order, OrderItem, HeroSlide } = require('./models');
 const ejs = require('ejs');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
@@ -243,17 +243,227 @@ app.get('/register', async (req, res) => {
 });
 
 app.post('/auth/register', async (req, res) => {
-  const { name, email, password } = req.body;
-  const exists = await User.findOne({ where: { email } });
-  if (exists) {
-    const bodyHtml = await ejs.renderFile(path.join(__dirname, 'views', 'register.ejs'), { error: 'Email already registered', currentUser: req.session.user });
+  const {
+    name,
+    email,
+    password,
+    confirm_password,
+    phone,
+    full_address,
+    latitude,
+    longitude
+  } = req.body;
+
+  if (password !== confirm_password) {
+    const bodyHtml = await ejs.renderFile(path.join(__dirname, 'views', 'register.ejs'), {
+      error: 'Las contraseñas no coinciden',
+      currentUser: req.session.user
+    });
+
     return res.status(400).render('layout', { body: bodyHtml });
   }
+
+  const exists = await User.findOne({ where: { email } });
+
+  if (exists) {
+    const bodyHtml = await ejs.renderFile(path.join(__dirname, 'views', 'register.ejs'), {
+      error: 'Este correo ya está registrado',
+      currentUser: req.session.user
+    });
+
+    return res.status(400).render('layout', { body: bodyHtml });
+  }
+
   const hash = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, password_hash: hash, role: 'user' });
-  req.session.user = { id: user.id, email: user.email, name: user.name, role: user.role || 'user' };
+
+  const user = await User.create({
+    name,
+    email,
+    phone: phone || null,
+    password_hash: hash,
+    role: 'user'
+  });
+
+  if (full_address && full_address.trim()) {
+    await UserAddress.create({
+      user_id: user.id,
+      label: 'Principal',
+      full_address: full_address.trim(),
+      phone: phone || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      is_default: true
+    });
+  }
+
+  req.session.user = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role || 'user'
+  };
+
   if (!req.session.cart) req.session.cart = [];
+
   res.redirect('/');
+});
+
+app.get('/account', async (req, res) => {
+  if (!req.session.user) return res.redirect('/login');
+
+  const user = await User.findByPk(req.session.user.id, {
+    include: [
+      {
+        model: UserAddress,
+        as: 'addresses'
+      }
+    ]
+  });
+
+  if (!user) return res.redirect('/login');
+
+  const body = await ejs.renderFile(path.join(__dirname, 'views', 'account.ejs'), {
+    user,
+    addresses: user.addresses || [],
+    currentUser: req.session.user
+  });
+
+  res.render('layout', { body });
+});
+
+app.post('/account', async (req, res) => {
+  if (!req.session.user) return res.redirect('/login');
+
+  const { name, email, phone, current_password, new_password, confirm_password } = req.body;
+
+  const user = await User.findByPk(req.session.user.id);
+  if (!user) return res.redirect('/login');
+
+  const exists = await User.findOne({ where: { email } });
+
+  if (exists && exists.id !== user.id) {
+    const addresses = await UserAddress.findAll({
+      where: { user_id: user.id },
+      order: [['created_at', 'DESC']]
+    });
+
+    const body = await ejs.renderFile(path.join(__dirname, 'views', 'account.ejs'), {
+      user,
+      addresses,
+      error: 'Ese correo ya está siendo usado por otra cuenta',
+      success: null,
+      currentUser: req.session.user
+    });
+
+    return res.status(400).render('layout', { body });
+  }
+
+  user.name = name || user.name;
+  user.email = email || user.email;
+  user.phone = phone || null;
+
+  if (new_password && new_password.trim()) {
+    if (new_password !== confirm_password) {
+      const addresses = await UserAddress.findAll({
+        where: { user_id: user.id },
+        order: [['created_at', 'DESC']]
+      });
+
+      const body = await ejs.renderFile(path.join(__dirname, 'views', 'account.ejs'), {
+        user,
+        addresses,
+        error: 'La nueva contraseña no coincide con la confirmación',
+        success: null,
+        currentUser: req.session.user
+      });
+
+      return res.status(400).render('layout', { body });
+    }
+
+    if (!current_password || !current_password.trim()) {
+      const addresses = await UserAddress.findAll({
+        where: { user_id: user.id },
+        order: [['created_at', 'DESC']]
+      });
+
+      const body = await ejs.renderFile(path.join(__dirname, 'views', 'account.ejs'), {
+        user,
+        addresses,
+        error: 'Debes escribir tu contraseña actual para cambiarla',
+        success: null,
+        currentUser: req.session.user
+      });
+
+      return res.status(400).render('layout', { body });
+    }
+
+    const ok = await bcrypt.compare(current_password, user.password_hash);
+
+    if (!ok) {
+      const addresses = await UserAddress.findAll({
+        where: { user_id: user.id },
+        order: [['created_at', 'DESC']]
+      });
+
+      const body = await ejs.renderFile(path.join(__dirname, 'views', 'account.ejs'), {
+        user,
+        addresses,
+        error: 'La contraseña actual no es correcta',
+        success: null,
+        currentUser: req.session.user
+      });
+
+      return res.status(400).render('layout', { body });
+    }
+
+    user.password_hash = await bcrypt.hash(new_password.trim(), 10);
+  }
+
+  await user.save();
+
+  req.session.user = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role || 'user'
+  };
+
+  const addresses = await UserAddress.findAll({
+    where: { user_id: user.id },
+    order: [['created_at', 'DESC']]
+  });
+
+  const body = await ejs.renderFile(path.join(__dirname, 'views', 'account.ejs'), {
+    user,
+    addresses,
+    error: null,
+    success: 'Datos actualizados correctamente',
+    currentUser: req.session.user
+  });
+
+  res.render('layout', { body });
+});
+
+app.post('/account/addresses', async (req, res) => {
+  if (!req.session.user) return res.redirect('/login');
+
+  const { label, full_address, phone, latitude, longitude } = req.body;
+
+  if (!full_address || !full_address.trim()) {
+    return res.redirect('/account');
+  }
+
+  await UserAddress.create({
+    user_id: req.session.user.id,
+    label: label || 'Dirección',
+    full_address: full_address.trim(),
+    phone: phone || null,
+    latitude: latitude || null,
+    longitude: longitude || null,
+    is_default: false
+  });
+
+  res.redirect('/account');
 });
 
 // Admin: create new product (image optional)
@@ -408,17 +618,79 @@ app.post('/cart/add', async (req, res) => {
 // Show cart page (use session.cart to build items)
 app.get('/cart', async (req, res) => {
   const sessionCart = req.session.cart || [];
-  // sessionCart: [{productId, quantity}]
   const items = [];
+
+  // Construir los productos del carrito
   for (const it of sessionCart) {
     const prod = await Product.findByPk(it.productId);
+
     if (!prod) continue;
-    items.push({ product: prod, quantity: it.quantity, unit_price: parseFloat(prod.price_regular) });
+
+    items.push({
+      product: prod,
+      quantity: it.quantity,
+      unit_price: parseFloat(prod.price_regular)
+    });
   }
-  const subtotal = items.reduce((s, it) => s + (parseFloat(it.unit_price) * it.quantity), 0);
-  const tax = +(subtotal * 0.12).toFixed(2); // example 12% IVA
-  const totals = { subtotal, tax, total: +(subtotal + tax).toFixed(2) };
-  const body = await ejs.renderFile(path.join(__dirname, 'views', 'cart.ejs'), { items, totals, currentUser: req.session.user });
+
+  // Calcular totales
+  const subtotal = items.reduce((s, it) => {
+    return s + (parseFloat(it.unit_price) * it.quantity);
+  }, 0);
+
+  const tax = +(subtotal * 0.12).toFixed(2);
+
+  const totals = {
+    subtotal,
+    tax,
+    total: +(subtotal + tax).toFixed(2)
+  };
+
+  // Sugerencias de compra
+  let suggestedProducts = [];
+
+  if (items.length > 0) {
+    const productIdsInCart = items.map(it => it.product.product_id);
+
+    const categoryIds = [
+      ...new Set(
+        items
+          .map(it => it.product.category_id)
+          .filter(Boolean)
+      )
+    ];
+
+if (categoryIds.length > 0) {
+  suggestedProducts = await Product.findAll({
+    where: {
+      category_id: categoryIds,
+      product_id: { [Op.notIn]: productIdsInCart },
+      stock: { [Op.gt]: 0 }
+    },
+    include: ['category'],
+    limit: 4
+  });
+}
+
+if (suggestedProducts.length === 0) {
+  suggestedProducts = await Product.findAll({
+    where: {
+      product_id: { [Op.notIn]: productIdsInCart },
+      stock: { [Op.gt]: 0 }
+    },
+    include: ['category'],
+    limit: 4
+  });
+}
+  }
+
+  const body = await ejs.renderFile(path.join(__dirname, 'views', 'cart.ejs'), {
+    items,
+    totals,
+    suggestedProducts,
+    currentUser: req.session.user
+  });
+
   res.render('layout', { body });
 });
 
@@ -528,4 +800,8 @@ async function start() {
   app.listen(PORT, () => console.log('Server listening on http://localhost:' + PORT));
 }
 
-start();
+if (require.main === module) {
+  start();
+}
+
+module.exports = app;

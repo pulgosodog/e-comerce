@@ -1,11 +1,19 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, '..', 'database.sqlite'),
-  logging: false
-});
+const databaseUrl = process.env.DATABASE_URL || null;
+const sequelizeOptions = { logging: false };
+
+const sequelize = databaseUrl
+  ? new Sequelize(databaseUrl, {
+      ...sequelizeOptions,
+      dialectOptions: process.env.DB_SSL === 'true' ? { ssl: { require: true, rejectUnauthorized: false } } : {}
+    })
+  : new Sequelize({
+      dialect: 'sqlite',
+      storage: path.join(__dirname, '..', 'database.sqlite'),
+      ...sequelizeOptions
+    });
 
 const Category = sequelize.define('Category', {
   category_id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -41,11 +49,30 @@ const User = sequelize.define('User', {
   name: { type: DataTypes.STRING(255) },
   email: { type: DataTypes.STRING(255), unique: true },
   password_hash: { type: DataTypes.STRING(255) },
+  phone: { type: DataTypes.STRING(50), allowNull: true },
   role: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'user' }
 }, {
   tableName: 'users',
   timestamps: false
 });
+
+const UserAddress = sequelize.define('UserAddress', {
+  address_id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id: { type: DataTypes.INTEGER, allowNull: false },
+  label: { type: DataTypes.STRING(100), allowNull: true },
+  full_address: { type: DataTypes.TEXT, allowNull: false },
+  phone: { type: DataTypes.STRING(50), allowNull: true },
+  latitude: { type: DataTypes.DECIMAL(10, 8), allowNull: true },
+  longitude: { type: DataTypes.DECIMAL(11, 8), allowNull: true },
+  is_default: { type: DataTypes.BOOLEAN, defaultValue: false }
+}, {
+  tableName: 'user_addresses',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
+});
+
+
 
 Product.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
 Category.hasMany(Product, { foreignKey: 'category_id', as: 'products' });
@@ -112,17 +139,34 @@ const HeroSlide = sequelize.define('HeroSlide', {
   timestamps: false
 });
 
+
 // Associations
 User.hasOne(Cart, { foreignKey: 'user_id', as: 'cart' });
 Cart.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 Cart.hasMany(CartItem, { foreignKey: 'cart_id', as: 'items' });
 CartItem.belongsTo(Cart, { foreignKey: 'cart_id', as: 'cart' });
 CartItem.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
+User.hasMany(UserAddress, { foreignKey: 'user_id', as: 'addresses' });
+UserAddress.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 User.hasMany(Order, { foreignKey: 'user_id', as: 'orders' });
 Order.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 Order.hasMany(OrderItem, { foreignKey: 'order_id', as: 'items' });
 OrderItem.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 OrderItem.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
-module.exports = { sequelize, Product, Category, User, Cart, CartItem, Order, OrderItem, HeroSlide };
+module.exports = {
+  sequelize,
+  Product,
+  Category,
+  User,
+  UserAddress,
+  Cart,
+  CartItem,
+  Order,
+  OrderItem,
+  HeroSlide
+};
