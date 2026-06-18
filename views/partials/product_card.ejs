@@ -1,4 +1,4 @@
-<article class="product-card" data-product-id="<%= p.product_id %>" data-name="<%- p.name %>" data-brand="<%- p.brand || '' %>" data-sku="<%- p.sku || '' %>" data-price_regular="<%- p.price_regular %>" data-price_sale="<%- p.price_sale || '' %>" data-stock="<%- p.stock || 0 %>" data-category_id="<%- p.category_id || '' %>" data-description="<%- p.description || '' %>">
+<article class="product-card" data-product-id="<%= p.product_id %>" data-name="<%- p.name %>" data-brand="<%- p.brand || '' %>" data-sku="<%- p.sku || '' %>" data-price_regular="<%- p.price_regular %>" data-price_sale="<%- p.price_sale || '' %>" data-stock="<%- p.stock || 0 %>" data-category_id="<%- p.category_id || '' %>" data-category-name="<%- p.category ? p.category.name : '' %>" data-is-on-sale="<%= p.is_on_sale ? '1' : '0' %>" data-description="<%- p.description || '' %>">
   <% if (currentUser && currentUser.role === 'admin') { %>
     <button class="product-edit" title="Editar producto" aria-label="Editar producto" data-id="<%= p.product_id %>">✎</button>
   <% } %>

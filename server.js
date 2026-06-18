@@ -779,7 +779,35 @@ app.post('/auth/logout', (req, res) => {
 
 // Start server: sync DB (seed moved to scripts/seed.js)
 async function start() {
+  // Use simple sync to avoid complex ALTER operations that can fail on SQLite backups.
+  // We will add missing `users` columns explicitly for SQLite to be safe in dev.
   await sequelize.sync();
+  try {
+    if (sequelize.getDialect && sequelize.getDialect() === 'sqlite') {
+      const [[info]] = await sequelize.query("PRAGMA table_info('users');");
+      // If above query returned rows differently, normalize
+      const cols = Array.isArray(info) ? info.map(r => r.name) : (Array.isArray(info) ? info.map(r=>r.name) : []);
+      // Fallback: when the returned shape is array of rows
+      const rows = Array.isArray(info) && info.length ? info : (Array.isArray((await sequelize.query("PRAGMA table_info('users');"))[0]) ? (await sequelize.query("PRAGMA table_info('users');"))[0] : []);
+      const colNames = rows.map(r => r.name);
+      const addIfMissing = async (name, sqlType) => {
+        if (!colNames.includes(name)) {
+          try {
+            await sequelize.query(`ALTER TABLE users ADD COLUMN ${name} ${sqlType};`);
+            console.log('Added column', name);
+          } catch (err) {
+            console.warn('Failed adding column', name, err && err.message);
+          }
+        }
+      };
+      await addIfMissing('address', 'TEXT');
+      await addIfMissing('phone', 'TEXT');
+      await addIfMissing('lat', 'DECIMAL(10,8)');
+      await addIfMissing('lng', 'DECIMAL(11,8)');
+    }
+  } catch (err) {
+    console.warn('Error while ensuring user columns exist:', err && err.message);
+  }
   // ensure there are 3 hero slides
   try {
     const cnt = await HeroSlide.count();
