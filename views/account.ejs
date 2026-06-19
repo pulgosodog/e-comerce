@@ -1,0 +1,426 @@
+<section class="account-page" style="max-width:1000px;margin:24px auto;padding:20px">
+  <h2>Mi cuenta</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+    <div style="border:1px solid #e9e9e9;border-radius:10px;padding:18px;background:#fff">
+      <h3>Datos personales</h3>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="error" style="margin-bottom:12px"><%= error %></div>
+      <% } %>
+
+      <% if (typeof success !== 'undefined' && success) { %>
+        <div style="background:#e9f8ee;color:#176b35;padding:10px;border-radius:8px;margin-bottom:12px">
+          <%= success %>
+        </div>
+      <% } %>
+
+      <div id="account-info">
+        <p><strong>Nombre:</strong> <%= user.name || 'No definido' %></p>
+        <p><strong>Correo:</strong> <%= user.email || 'No definido' %></p>
+        <p><strong>Teléfono:</strong> <%= user.phone || 'No definido' %></p>
+
+        <button type="button" class="btn btn-primary" id="show-edit-account-btn">
+          Editar datos
+        </button>
+      </div>
+
+      <form
+        method="post"
+        action="/account"
+        class="auth-form"
+        id="account-edit-form"
+        style="display:none;margin-top:16px"
+      >
+        <input
+          class="form-input"
+          type="text"
+          name="name"
+          placeholder="Nombre completo"
+          value="<%= user.name || '' %>"
+          required
+        />
+
+        <input
+          class="form-input"
+          type="email"
+          name="email"
+          placeholder="Correo electrónico"
+          value="<%= user.email || '' %>"
+          required
+        />
+
+        <input
+        class="form-input"
+        type="tel"
+        name="phone"
+        placeholder="Número de teléfono"
+        value="<%= user.phone || '' %>"
+        pattern="[0-9]+"
+        inputmode="numeric"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+        />
+
+        <hr style="margin:16px 0;border:none;border-top:1px solid #eee">
+
+        <h4>Cambiar contraseña</h4>
+
+        <input
+          class="form-input"
+          type="password"
+          name="current_password"
+          placeholder="Contraseña actual"
+          required
+          oninput="this.value=this.value.replace(/\s/g,'')"
+        />
+
+        <input
+          class="form-input"
+          type="password"
+          name="new_password"
+          placeholder="Nueva contraseña"
+          required
+          oninput="this.value=this.value.replace(/\s/g,'')"
+          
+        />
+
+        <input
+          class="form-input"
+          type="password"
+          name="confirm_password"
+          placeholder="Confirmar nueva contraseña"
+          required
+          oninput="this.value=this.value.replace(/\s/g,'')"
+        />
+
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary" type="submit">Guardar cambios</button>
+
+          <button class="btn btn-outline" type="button" id="cancel-edit-account-btn">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div style="border:1px solid #e9e9e9;border-radius:10px;padding:18px;background:#fff">
+      <h3>Direcciones</h3>
+<button type="button" class="btn btn-primary" id="show-address-form-btn" style="margin-bottom:12px">
+  Agregar dirección
+</button>
+
+<form
+  method="post"
+  action="/account/addresses"
+  class="auth-form"
+  id="address-form"
+  style="display:none;margin-bottom:16px"
+>
+  <input
+    class="form-input"
+    type="text"
+    name="label"
+    placeholder="Etiqueta, ejemplo: Casa, Trabajo"
+  />
+
+  <input
+    class="form-input"
+    type="text"
+    name="full_address"
+    placeholder="Dirección completa"
+    required
+  />
+
+    <input
+    class="form-input"
+    type="tel"
+    name="phone"
+    placeholder="Teléfono de contacto"
+    pattern="[0-9]+"
+    inputmode="numeric"
+    oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+    />
+
+<input type="hidden" name="latitude" id="address-latitude" />
+<input type="hidden" name="longitude" id="address-longitude" />
+
+<button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin:8px 0">
+  Usar mi ubicación actual
+</button>
+
+<div
+  id="address-map"
+  style="height:260px;border-radius:10px;border:1px solid #ddd;margin:10px 0"
+></div>
+
+<p id="location-status" style="font-size:13px;color:#666;margin:6px 0">
+  Puedes usar tu ubicación actual o seleccionar un punto en el mapa.
+</p>
+<p id="location-status" style="font-size:13px;color:#666;margin:6px 0">
+</p>
+  Puedes usar tu ubicación actual o seleccionar un punto en el mapa.
+  <div id="route-info" style="display:none;background:#f8f8f8;border:1px solid #eee;border-radius:8px;padding:10px;margin-top:10px">
+  <strong>Estimación desde Multicentro Las Américas</strong>
+  <p id="route-distance" style="margin:6px 0"></p>
+  <p id="route-car-time" style="margin:6px 0"></p>
+  <p id="route-bus-time" style="margin:6px 0"></p>
+</div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button class="btn btn-primary" type="submit">Guardar dirección</button>
+
+    <button class="btn btn-outline" type="button" id="cancel-address-form-btn">
+      Cancelar
+    </button>
+  </div>
+</form>
+      <% if (!addresses || addresses.length === 0) { %>
+        <p>No tienes direcciones guardadas.</p>
+      <% } else { %>
+        <% addresses.forEach(function(address) { %>
+          <div style="border-bottom:1px solid #eee;padding:10px 0">
+            <p style="margin:0"><strong><%= address.label || 'Dirección' %></strong></p>
+            <p style="margin:4px 0"><%= address.full_address %></p>
+
+            <% if (address.phone) { %>
+              <p style="margin:4px 0;color:#666">Tel: <%= address.phone %></p>
+            <% } %>
+
+            <% if (address.latitude && address.longitude) { %>
+              <p style="margin:4px 0;color:#666;font-size:13px">
+                Coordenadas: <%= address.latitude %>, <%= address.longitude %>
+              </p>
+            <% } %>
+
+            <% if (address.is_default) { %>
+              <span style="font-size:12px;background:#eef;padding:4px 8px;border-radius:20px">
+                Principal
+              </span>
+            <% } %>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+</section>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Editar datos personales
+    const showBtn = document.getElementById('show-edit-account-btn');
+    const cancelBtn = document.getElementById('cancel-edit-account-btn');
+    const infoBox = document.getElementById('account-info');
+    const form = document.getElementById('account-edit-form');
+
+    if (showBtn && cancelBtn && infoBox && form) {
+      showBtn.addEventListener('click', () => {
+        infoBox.style.display = 'none';
+        form.style.display = 'block';
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        form.style.display = 'none';
+        infoBox.style.display = 'block';
+      });
+    }
+
+    // Mapa y geolocalización
+    const mapContainer = document.getElementById('address-map');
+    const latInput = document.getElementById('address-latitude');
+    const lngInput = document.getElementById('address-longitude');
+    const locationBtn = document.getElementById('use-current-location-btn');
+    const locationStatus = document.getElementById('location-status');
+
+    let map = null;
+    let marker = null;
+    let storeMarker = null;
+    let routeLine = null;
+
+    const STORE_LOCATION = {
+      lat: 12.1437,
+      lng: -86.2245,
+      name: 'Multicentro Las Américas'
+    };
+
+    function formatMinutes(minutes) {
+      const hours = Math.floor(minutes / 60);
+      const mins = Math.round(minutes % 60);
+
+      if (hours <= 0) return `${mins} min`;
+      return `${hours} h ${mins} min`;
+    }
+
+    function setLocation(lat, lng) {
+      if (!latInput || !lngInput || !locationStatus) return;
+
+      latInput.value = lat;
+      lngInput.value = lng;
+
+      if (!map) return;
+
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = L.marker([lat, lng])
+          .addTo(map)
+          .bindPopup('Tu ubicación');
+      }
+
+      marker.openPopup();
+
+      map.setView([lat, lng], 15);
+
+      locationStatus.textContent = `Ubicación seleccionada: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      calculateRouteToStore(lat, lng);
+    }
+
+    async function calculateRouteToStore(userLat, userLng) {
+      const routeInfo = document.getElementById('route-info');
+      const routeDistance = document.getElementById('route-distance');
+      const routeCarTime = document.getElementById('route-car-time');
+      const routeBusTime = document.getElementById('route-bus-time');
+
+      if (!routeInfo || !routeDistance || !routeCarTime || !routeBusTime || !map) return;
+
+      try {
+        routeInfo.style.display = 'block';
+        routeDistance.textContent = 'Calculando ruta...';
+        routeCarTime.textContent = '';
+        routeBusTime.textContent = '';
+
+        const url = `https://router.project-osrm.org/route/v1/driving/${STORE_LOCATION.lng},${STORE_LOCATION.lat};${userLng},${userLat}?overview=full&geometries=geojson`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.routes || data.routes.length === 0) {
+          routeDistance.textContent = 'No se pudo calcular la ruta.';
+          return;
+        }
+
+        const route = data.routes[0];
+
+        const distanceKm = (route.distance / 1000).toFixed(1);
+
+  
+
+const osrmMinutes = route.duration / 60;
+
+// Ajuste manual basado en tiempo real aproximado
+const adjustmentFactor = 1.5;
+
+const carMinutes = osrmMinutes * adjustmentFactor;
+const busMinutes = carMinutes * 1.4;
+
+routeDistance.textContent = `Distancia aproximada: ${distanceKm} km`;
+routeCarTime.textContent = `Tiempo estimado en carro: ${formatMinutes(carMinutes)}`;
+routeBusTime.textContent = `Tiempo estimado en bus: ${formatMinutes(busMinutes)}`;
+
+        routeDistance.textContent = `Distancia aproximada: ${distanceKm} km`;
+        routeCarTime.textContent = `Tiempo estimado en carro: ${formatMinutes(carMinutes)}`;
+        routeBusTime.textContent = `Tiempo estimado en bus: ${formatMinutes(busMinutes)}`;
+
+        const coordinates = route.geometry.coordinates.map(coord => [
+          coord[1],
+          coord[0]
+        ]);
+
+        if (routeLine) {
+          map.removeLayer(routeLine);
+        }
+
+        routeLine = L.polyline(coordinates, {
+          weight: 5
+        }).addTo(map);
+
+        map.fitBounds(routeLine.getBounds(), {
+          padding: [30, 30]
+        });
+
+      } catch (error) {
+        console.error(error);
+        routeInfo.style.display = 'block';
+        routeDistance.textContent = 'Error calculando la ruta.';
+      }
+    }
+
+    if (mapContainer && typeof L !== 'undefined') {
+      map = L.map('address-map').setView(
+        [STORE_LOCATION.lat, STORE_LOCATION.lng],
+        13
+      );
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      storeMarker = L.marker([STORE_LOCATION.lat, STORE_LOCATION.lng])
+        .addTo(map)
+        .bindPopup(STORE_LOCATION.name);
+
+      storeMarker.openPopup();
+
+      map.on('click', (event) => {
+        setLocation(event.latlng.lat, event.latlng.lng);
+      });
+    }
+
+    if (locationBtn) {
+      locationBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          locationStatus.textContent = 'Tu navegador no soporta geolocalización.';
+          return;
+        }
+
+        locationStatus.textContent = 'Solicitando ubicación...';
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            setLocation(lat, lng);
+          },
+          (error) => {
+            console.error(error);
+            locationStatus.textContent =
+              'No se pudo obtener tu ubicación. Revisa los permisos del navegador o selecciona el punto manualmente en el mapa.';
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          }
+        );
+      });
+    }
+
+    // Agregar dirección
+    const showAddressBtn = document.getElementById('show-address-form-btn');
+    const cancelAddressBtn = document.getElementById('cancel-address-form-btn');
+    const addressForm = document.getElementById('address-form');
+
+    if (showAddressBtn && cancelAddressBtn && addressForm) {
+      showAddressBtn.addEventListener('click', () => {
+        showAddressBtn.style.display = 'none';
+        addressForm.style.display = 'block';
+
+        setTimeout(() => {
+          if (map) {
+            map.invalidateSize();
+            map.setView([STORE_LOCATION.lat, STORE_LOCATION.lng], 13);
+          }
+        }, 300);
+      });
+
+      cancelAddressBtn.addEventListener('click', () => {
+        addressForm.style.display = 'none';
+        showAddressBtn.style.display = 'inline-block';
+      });
+    }
+  });
+</script>
