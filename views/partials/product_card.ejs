@@ -4,7 +4,7 @@
   <% } %>
   <a href="/product/<%= p.product_id %>" class="product-link">
     <div class="product-card-media">
-      <img src="<%= p.image_url || '/images/placeholder.png' %>" alt="<%= p.name %>" loading="lazy" width="340" height="160" onerror="this.onerror=null;this.src='/images/placeholder.png';" />
+      <img src="<%= p.image_url || '/images/placeholder.png' %>" alt="<%= p.name %>" loading="lazy" width="340" height="160" data-fallback="/images/placeholder.png" />
     </div>
     <div class="product-card-content">
       <h3><%= p.name %></h3>

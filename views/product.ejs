@@ -1,7 +1,7 @@
 <section class="product-detail" style="max-width:1100px;margin:24px auto;padding:20px">
   <div style="display:flex;gap:24px;align-items:flex-start;">
     <div style="flex:1;max-width:480px">
-      <img src="<%= product.image_url || '/images/placeholder.png' %>" alt="<%= product.name %>" loading="lazy" width="480" height="320" style="width:100%;border-radius:8px;object-fit:cover" onerror="this.onerror=null;this.src='/images/placeholder.png';" />
+      <img src="<%= product.image_url || '/images/placeholder.png' %>" alt="<%= product.name %>" loading="lazy" width="480" height="320" style="width:100%;border-radius:8px;object-fit:cover" data-fallback="/images/placeholder.png" />
     </div>
     <div style="flex:1.2">
       <h1 style="margin:0 0 8px"><%= product.name %></h1>
@@ -20,42 +20,12 @@
       <div style="margin-top:16px;display:flex;gap:12px;align-items:center">
         <input id="qty" type="number" value="1" min="1" max="<%= product.stock || 1 %>" style="width:80px;padding:8px;border:1px solid #e0e0e0;border-radius:8px" <%= product.stock <= 0 ? 'disabled' : '' %> />
         <% if (product.stock > 0) { %>
-          <button id="add-to-cart-detail" class="btn btn-primary">Añadir al carrito</button>
+          <button id="add-to-cart-detail" class="btn btn-primary" data-product-id="<%= product.product_id %>">Añadir al carrito</button>
         <% } else { %>
-          <button id="add-to-cart-detail" class="btn" style="background-color: #ccc; color: #666; cursor: not-allowed;" disabled>No disponible</button>
+          <button id="add-to-cart-detail" class="btn" style="background-color: #ccc; color: #666; cursor: not-allowed;" disabled data-product-id="<%= product.product_id %>">No disponible</button>
         <% } %>
       </div>
     </div>
   </div>
 
-  <script>
-    document.getElementById('add-to-cart-detail').addEventListener('click', async () => {
-      if (<%= product.stock %> <= 0) return; // Prevent adding if out of stock
-      const qty = parseInt(document.getElementById('qty').value, 10) || 1;
-      try {
-        const res = await fetch('/cart/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: <%= product.product_id %>, quantity: qty }) });
-        if (res.ok) {
-          const json = await res.json();
-          // update cart count in header if present
-          const span = document.getElementById('cart-count');
-          if (span) span.textContent = json.cart.reduce((s, it) => s + it.quantity, 0);
-          alert('Producto agregado al carrito');
-          return;
-        } else {
-          const json = await res.json();
-          alert(json.message || 'Error al agregar al carrito');
-          return;
-        }
-      } catch (err) {
-        // fallback to localStorage
-      }
-      // fallback localStorage
-      const local = JSON.parse(localStorage.getItem('cart') || '[]');
-      const found = local.find(i => i.productId === <%= product.product_id %>);
-      if (found) found.quantity += qty; else local.push({ productId: <%= product.product_id %>, quantity: qty });
-      localStorage.setItem('cart', JSON.stringify(local));
-      const span = document.getElementById('cart-count'); if (span) span.textContent = local.reduce((s,i)=>s+i.quantity,0);
-      alert('Producto agregado al carrito (local)');
-    });
-  </script>
 </section>

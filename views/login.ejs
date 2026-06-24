@@ -10,23 +10,3 @@
     </form>
   </div>
 </div>
-
-<script>
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const body = { email: fd.get('email'), password: fd.get('password') };
-    const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const json = await res.json();
-    if (!json.success) return alert(json.message || 'Error');
-
-    // merge local cart into session
-    const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    if (localCart.length) {
-      await fetch('/auth/merge-cart', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: localCart }) });
-      // mark merged and clear local cart
-      localStorage.removeItem('cart');
-    }
-    location.href = '/';
-  });
-</script>
