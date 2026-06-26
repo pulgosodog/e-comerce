@@ -3,7 +3,8 @@
     <button id="mobile-menu-toggle" class="mobile-menu-toggle icon" aria-label="Abrir menú">☰</button>
 
     <a class="logo" href="/">
-      <img src="/images/logo.png" alt="Logo" onerror="this.onerror=null;this.src='/images/placeholder.png'" loading="lazy" width="120" height="36" />
+      <img src="/images/logo.png" alt="Logo" onerror="this.onerror=null;this.src='/images/placeholder.png'"
+        loading="lazy" width="120" height="36" />
     </a>
 
     <div class="search">
@@ -27,17 +28,23 @@
       <% if (!currentUser) { %>
         <a href="/login" class="btn">Login</a>
         <a href="/register" class="btn">Registro</a>
-      <% } else { %>
-        <a href="/orders" class="btn">Órdenes</a>
-        <% if (currentUser.role === 'admin') { %>
-          <a href="/admin/users" class="btn">Editar usuarios</a>
-        <% } %>
-        <form method="post" action="/auth/logout" style="display:inline">
-          <button type="submit" class="btn">Cerrar sesión</button>
-        </form>
-      <% } %>
+        <% } else { %>
+          <% if (currentUser.role==='admin' ) { %>
+            <a href="/admin/reporte" class="btn">Reporte</a>
+            <% } %>
+              <a href="/orders" class="btn">Órdenes</a>
+              <% if (currentUser.role==='admin' ) { %>
+                <a href="/admin/users" class="btn">Editar usuarios</a>
+                <% } %>
+                  <form method="post" action="/auth/logout" style="display:inline">
+                    <button type="submit" class="btn">Cerrar sesión</button>
+                  </form>
+                  <% } %>
 
-      <a href="/cart" id="cart-link" class="icon" title="Carrito">🛒 <span id="cart-count" data-server-count="<%= cartCount %>"><%= cartCount %></span></a>
+                    <a href="/cart" id="cart-link" class="icon" title="Carrito">🛒 <span id="cart-count"
+                        data-server-count="<%= cartCount %>">
+                        <%= cartCount %>
+                      </span></a>
     </div>
   </div>
 
@@ -45,7 +52,8 @@
     <div class="mobile-menu-panel">
       <button id="mobile-menu-close" class="mobile-menu-close" aria-label="Cerrar menú">×</button>
       <a class="mobile-menu-logo" href="/">
-        <img src="/images/logo.png" alt="Logo" onerror="this.onerror=null;this.src='/images/placeholder.png'" loading="lazy" width="120" height="36" />
+        <img src="/images/logo.png" alt="Logo" onerror="this.onerror=null;this.src='/images/placeholder.png'"
+          loading="lazy" width="120" height="36" />
       </a>
       <nav class="mobile-menu-list">
         <button id="mobile-categories-btn" class="mobile-menu-item" type="button">Categorías</button>
@@ -54,16 +62,16 @@
         <% if (!currentUser) { %>
           <a href="/login" class="mobile-menu-item">Login</a>
           <a href="/register" class="mobile-menu-item">Registro</a>
-        <% } else { %>
-          <a href="/orders" class="mobile-menu-item">Órdenes</a>
-          <% if (currentUser.role === 'admin') { %>
-            <a href="/admin/users" class="mobile-menu-item">Editar usuarios</a>
-          <% } %>
-          <form method="post" action="/auth/logout" style="display:inline">
-            <button type="submit" class="mobile-menu-item">Cerrar sesión</button>
-          </form>
-        <% } %>
-        <a href="/cart" class="mobile-menu-item">Carrito</a>
+          <% } else { %>
+            <a href="/orders" class="mobile-menu-item">Órdenes</a>
+            <% if (currentUser.role==='admin' ) { %>
+              <a href="/admin/users" class="mobile-menu-item">Editar usuarios</a>
+              <% } %>
+                <form method="post" action="/auth/logout" style="display:inline">
+                  <button type="submit" class="mobile-menu-item">Cerrar sesión</button>
+                </form>
+                <% } %>
+                  <a href="/cart" class="mobile-menu-item">Carrito</a>
       </nav>
     </div>
   </div>

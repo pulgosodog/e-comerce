@@ -1,0 +1,114 @@
+<section class="dashboard-container">
+  <div class="view-toggle-container">
+    <div class="segmented-control" role="tablist" aria-label="Vista del reporte">
+      <button class="segment-btn active" type="button">Resumen de <b>Ventas</b></button>
+      <button class="segment-btn" type="button">Resumen de <b>Inventario</b></button>
+    </div>
+  </div>
+
+  <div class="filter-container">
+    <form method="get" action="/admin/reporte" class="filter-container">
+      <select class="report-dropdown" name="period" aria-label="Filtro de periodo" onchange="this.form.submit()">
+        <option value="weekly" <%= selectedPeriod === 'weekly' ? 'selected' : '' %>>Semanal</option>
+        <option value="monthly" <%= selectedPeriod === 'monthly' ? 'selected' : '' %>>Mensual</option>
+        <option value="yearly" <%= selectedPeriod === 'yearly' ? 'selected' : '' %>>Anual</option>
+      </select>
+    </form>
+  </div>
+
+  <div class="metrics-grid">
+    <article class="metric-card">
+      <div class="metric-title">Ingresos</div>
+      <div class="metric-value">$<%= Number(reportData.revenue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) %></div>
+      <div class="metric-footer">
+        <span class="trend up">▲</span>
+        <span class="vs-text">ventas del periodo</span>
+      </div>
+    </article>
+
+    <article class="metric-card">
+      <div class="metric-title">Órdenes</div>
+      <div class="metric-value"><%= reportData.totalOrders %></div>
+      <div class="metric-footer">
+        <span class="trend up">▲</span>
+        <span class="vs-text">pedidos confirmados</span>
+      </div>
+    </article>
+
+    <article class="metric-card">
+      <div class="metric-title">Promedio por orden</div>
+      <div class="metric-value">$<%= Number(reportData.averageOrderValue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) %></div>
+      <div class="metric-footer">
+        <span class="trend up">▲</span>
+        <span class="vs-text">valor promedio</span>
+      </div>
+    </article>
+
+    <article class="metric-card">
+      <div class="metric-title">Productos vendidos</div>
+      <div class="metric-value"><%= reportData.productsSold %></div>
+      <div class="metric-footer">
+        <span class="trend up">▲</span>
+        <span class="vs-text">unidades del periodo</span>
+      </div>
+    </article>
+  </div>
+
+  <div class="visuals-grid">
+    <section class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Productos con stock bajo</h3>
+        <a class="report-link" href="/admin/users">Ver inventario</a>
+      </div>
+      <div class="empty-state">Las ventas del periodo seleccionado aparecen en las métricas principales.</div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Distribución por categoría</h3>
+        <a class="report-link" href="/">Ver catálogo</a>
+      </div>
+      <% if (reportData.categoryBreakdown && reportData.categoryBreakdown.length) { %>
+        <div class="report-list">
+          <% reportData.categoryBreakdown.forEach((item) => { %>
+            <div class="report-list-item">
+              <strong><%= item.categoryName %></strong>
+              <span><%= item.productCount %> productos</span>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="empty-state">Aún no hay categorías cargadas.</div>
+      <% } %>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Últimas órdenes</h3>
+        <a class="report-link" href="/orders">Ver todas</a>
+      </div>
+      <% if (reportData.recentOrders && reportData.recentOrders.length) { %>
+        <table class="table-list">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Estado</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% reportData.recentOrders.forEach((order) => { %>
+              <tr>
+                <td><%= order.user?.name || order.user?.email || 'Cliente' %></td>
+                <td><%= order.status %></td>
+                <td>$<%= Number(order.total || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <div class="empty-state">No hay órdenes recientes registradas.</div>
+      <% } %>
+    </section>
+  </div>
+</section>

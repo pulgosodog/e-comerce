@@ -3,7 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const path = require('path');
 const ejs = require('ejs');
-const { User, Product, HeroSlide, Order, OrderItem } = require('../models');
+const { Op } = require('sequelize');
+const { User, Product, HeroSlide, Order, OrderItem, Category, sequelize } = require('../models');
 const { isAdmin } = require('../middleware/auth');
 
 // Multer configuration (could be moved to a separate file later)
@@ -23,11 +24,85 @@ const renderBody = async (view, data) => {
   return await ejs.renderFile(path.join(__dirname, '../views', view), data);
 };
 
+// Admin dashboard report
+router.get('/reporte', isAdmin, async (req, res) => {
+  try {
+    const period = (req.query.period || 'monthly').toString().toLowerCase();
+    const now = new Date();
+    let startDate = new Date(now);
+
+    if (period === 'weekly') {
+      startDate.setDate(now.getDate() - 7);
+    } else if (period === 'yearly') {
+      startDate.setFullYear(now.getFullYear() - 1);
+    } else {
+      startDate.setMonth(now.getMonth() - 1);
+    }
+
+    const ordersInRange = await Order.findAll({
+      where: {
+        created_at: { [Op.gte]: startDate }
+      },
+      include: [
+        { model: User, as: 'user', attributes: ['name', 'email'] },
+        { model: OrderItem, as: 'items', attributes: ['quantity', 'unit_price'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    const revenue = ordersInRange.reduce((sum, order) => {
+      const orderValue = Number(order.total || 0);
+      return sum + orderValue;
+    }, 0);
+
+    const totalOrders = ordersInRange.length;
+    const averageOrderValue = totalOrders > 0
+      ? revenue / totalOrders
+      : 0;
+    const productsSold = ordersInRange.reduce((sum, order) => {
+      return sum + (order.items || []).reduce((itemsSum, item) => itemsSum + Number(item.quantity || 0), 0);
+    }, 0);
+
+    const categorySummary = await sequelize.query(`
+      SELECT c.category_id, c.name AS category_name, COUNT(p.product_id) AS product_count
+      FROM categories c
+      LEFT JOIN products p ON p.category_id = c.category_id
+      GROUP BY c.category_id, c.name
+      ORDER BY product_count DESC
+    `, { type: sequelize.QueryTypes.SELECT });
+
+    const categoryBreakdown = (categorySummary || [])
+      .map(item => ({
+        categoryName: item.category_name || 'Sin categoría',
+        productCount: Number(item.product_count || 0)
+      }))
+      .filter(item => item.productCount > 0);
+
+    const body = await renderBody('admin_report.ejs', {
+      currentUser: req.session.user,
+      selectedPeriod: period,
+      reportData: {
+        totalOrders,
+        revenue,
+        averageOrderValue,
+        productsSold,
+        categoryBreakdown,
+        recentOrders: ordersInRange.slice(0, 5)
+      }
+    });
+
+    res.render('layout', { body, currentUser: req.session.user });
+  } catch (err) {
+    console.error('admin report error', err && err.message);
+    res.status(500).send('No se pudo cargar el reporte');
+  }
+});
+
 // Admin: list and edit users
 router.get('/users', isAdmin, async (req, res) => {
   const users = await User.findAll({ order: [['id','ASC']] });
   const body = await renderBody('admin_users.ejs', { users, currentUser: req.session.user });
-  res.render('layout', { body });
+  res.render('layout', { body, currentUser: req.session.user });
 });
 
 router.post('/users/:id', isAdmin, async (req, res) => {

@@ -1,0 +1,258 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .dashboard-snippet-container {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #333333;
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 0 10px;
+    }
+
+    /* Grid de tarjetas superiores */
+    .metrics-grid-snippet {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .metric-card-snippet {
+        background-color: #ffffff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid #f0f0f0;
+    }
+
+    .metric-title-snippet {
+        font-size: 15px;
+        color: #333333;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .metric-value-snippet {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    /* Grid de Gráficas */
+    .visuals-grid-snippet {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .chart-card-snippet {
+        background-color: #ffffff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #f0f0f0;
+    }
+
+    .chart-header-snippet {
+        margin-bottom: 20px;
+    }
+
+    .chart-title-snippet {
+        font-size: 16px;
+        font-weight: bold;
+        color: #333333;
+    }
+
+    .chart-wrapper-snippet {
+        position: relative;
+        width: 100%;
+        height: 220px;
+        margin-top: auto;
+    }
+</style>
+
+<div class="dashboard-snippet-container">
+
+    <div class="metrics-grid-snippet">
+        <div class="metric-card-snippet">
+            <div class="metric-title-snippet">Total Revenue</div>
+            <div class="metric-value-snippet" id="metric-revenue">$0.00</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                <span id="metric-trend" style="font-weight: bold;"></span>
+                <span style="color: #8c8c8c;" id="metric-vs-text">vs last week</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="visuals-grid-snippet">
+        <div class="chart-card-snippet">
+            <div class="chart-header-snippet">
+                <div class="chart-title-snippet">Order Summary</div>
+            </div>
+            <div class="chart-wrapper-snippet">
+                <canvas id="chartOrderSummary"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card-snippet">
+            <div class="chart-header-snippet">
+                <div class="chart-title-snippet">Revenue Summary</div>
+            </div>
+            <div class="chart-wrapper-snippet">
+                <canvas id="chartRevenueSummary"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card-snippet">
+            <div class="chart-header-snippet">
+                <div class="chart-title-snippet">Ventas por Categorias:</div>
+            </div>
+            <div class="chart-wrapper-snippet">
+                <canvas id="chartVentasCategoria"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ==========================================
+    // DATA COMPONENT (Modificable)
+    // ==========================================
+    const dashboardData = {
+        metric: {
+            label: "Total Revenue",
+            value: 5675.00,
+            isCurrency: true,
+            trendPercentage: 3.9, // Si es positivo = Verde/Flecha arriba. Negativo = Rojo/Flecha abajo.
+            vsPeriod: "vs last week"
+        },
+        orderSummary: [18, 32, 15, 20], 
+        revenueSummary: [1200, 2100, 1500, 900, 1800, 3100, 2400],
+        categorias: {
+            labels: ['Cat 1', 'Cat 2', 'Cat 3', 'Cat 4'],
+            valores: [50, 25, 15, 10]
+        }
+    };
+
+    // ==========================================
+    // LOGICA DE TARJETA & TENDENCIAS DINÁMICAS
+    // ==========================================
+    const metric = dashboardData.metric;
+    
+    // Inyectar Valor de la Métrica
+    document.getElementById('metric-revenue').innerText = metric.isCurrency 
+        ? `$${metric.value.toLocaleString('en-US', {minimumFractionDigits: 2})}`
+        : metric.value;
+    
+    document.getElementById('metric-vs-text').innerText = metric.vsPeriod;
+
+    // Controlar color e icono de la flecha
+    const trendContainer = document.getElementById('metric-trend');
+    if (metric.trendPercentage >= 0) {
+        trendContainer.style.color = "#2ecc71"; // Verde
+        trendContainer.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> ${metric.trendPercentage}%`;
+    } else {
+        trendContainer.style.color = "#e74c3c"; // Rojo
+        trendContainer.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> ${Math.abs(metric.trendPercentage)}%`;
+    }
+
+    // ==========================================
+    // GENERADOR AUTOMÁTICO DE RANGOS (7 DÍAS)
+    // ==========================================
+    function generarRangosMesActual() {
+        const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        const fechaActual = new Date();
+        const mesTxt = nombresMeses[fechaActual.getMonth()];
+        return [`01-07 ${mesTxt}`, `08-14 ${mesTxt}`, `15-21 ${mesTxt}`, `22-28 ${mesTxt}`];
+    }
+
+    // ==========================================
+    // RENDERIZADO DE GRÁFICAS (CHART.JS)
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // --- GRÁFICA 1: ORDER SUMMARY ---
+        const ctxOrder = document.getElementById('chartOrderSummary').getContext('2d');
+        const maxActualOrders = Math.max(...dashboardData.orderSummary);
+        const sugeridoMaxY = Math.ceil(maxActualOrders * 1.15); // Eje Y escalado inteligentemente
+
+        new Chart(ctxOrder, {
+            type: 'line',
+            data: {
+                labels: generarRangosMesActual(),
+                datasets: [{
+                    data: dashboardData.orderSummary,
+                    borderColor: '#e64a19', 
+                    backgroundColor: 'rgba(230, 74, 25, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#e64a19',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, max: sugeridoMaxY, ticks: { stepSize: 5 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // --- GRÁFICA 2: REVENUE SUMMARY ---
+        const ctxRevenue = document.getElementById('chartRevenueSummary').getContext('2d');
+        new Chart(ctxRevenue, {
+            type: 'bar',
+            data: {
+                labels: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+                datasets: [{
+                    data: dashboardData.revenueSummary,
+                    backgroundColor: '#007680', 
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: value => '$' + value } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // --- GRÁFICA 3: VENTAS POR CATEGORÍA ---
+        const ctxCat = document.getElementById('chartVentasCategoria').getContext('2d');
+        new Chart(ctxCat, {
+            type: 'doughnut',
+            data: {
+                labels: dashboardData.categorias.labels,
+                datasets: [{
+                    data: dashboardData.categorias.valores,
+                    backgroundColor: ['#007680', '#d81b60', '#7e57c2', '#ffca28'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                rotation: -90, 
+                circumference: 180, 
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 10, font: { weight: 'bold', size: 11 } }
+                    }
+                }
+            }
+        });
+    });
+</script>
