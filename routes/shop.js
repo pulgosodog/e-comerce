@@ -100,7 +100,36 @@ router.get('/cart', async (req, res) => {
   const subtotal = items.reduce((s, it) => s + (parseFloat(it.unit_price) * it.quantity), 0);
   const tax = +(subtotal * 0.12).toFixed(2); // example 12% IVA
   const totals = { subtotal, tax, total: +(subtotal + tax).toFixed(2) };
-  const body = await renderBody('cart.ejs', { items, totals, currentUser: req.session.user });
+
+  const excludedIds = items.length ? items.map(i => i.product.product_id) : [];
+  const cartCategoryIds = [...new Set(items.map(i => i.product.category_id).filter(id => id != null))];
+
+  let suggestedProducts = [];
+  if (cartCategoryIds.length) {
+    suggestedProducts = await Product.findAll({
+      where: {
+        category_id: cartCategoryIds,
+        product_id: { [Op.notIn]: excludedIds }
+      },
+      limit: 4,
+      order: [['product_id', 'DESC']]
+    });
+  }
+
+  if (suggestedProducts.length < 4) {
+    const remainingCount = 4 - suggestedProducts.length;
+    const excludedFallback = excludedIds.concat(suggestedProducts.map(p => p.product_id));
+    const fallbackProducts = await Product.findAll({
+      where: {
+        product_id: { [Op.notIn]: excludedFallback }
+      },
+      limit: remainingCount,
+      order: [['stock', 'DESC']]
+    });
+    suggestedProducts = suggestedProducts.concat(fallbackProducts);
+  }
+
+  const body = await renderBody('cart.ejs', { items, totals, suggestedProducts, currentUser: req.session.user });
   res.render('layout', { body });
 });
 

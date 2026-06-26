@@ -84,4 +84,37 @@
       </div>
     </aside>
   <% } %>
-</section>
+
+<% if (suggestedProducts && suggestedProducts.length) { %>
+  <section style="margin-top:32px">
+    <h3>También te puede interesar</h3>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:14px">
+      <% suggestedProducts.forEach(function(p){ %>
+        <div style="border:1px solid #eee;border-radius:10px;padding:12px;background:#fff">
+          <a href="/product/<%= p.product_id %>" style="text-decoration:none;color:inherit">
+            <img src="<%= p.image_url || '/images/placeholder.png' %>" alt="<%= p.name %>" style="width:100%;height:140px;object-fit:cover;border-radius:8px">
+
+            <h4 style="margin:10px 0 4px"><%= p.name %></h4>
+            <p style="margin:0;color:#666;font-size:13px"><%= p.brand || '' %></p>
+
+            <p style="font-weight:700;margin:8px 0">
+              $<%= p.price_regular %>
+            </p>
+          </a>
+
+          <form class="suggested-add-form" method="post" action="/cart/add" style="margin-top:8px">
+            <input type="hidden" name="productId" value="<%= p.product_id %>">
+            <input type="hidden" name="quantity" value="1">
+
+            <button class="btn btn-primary" type="submit" style="width:100%">
+              Agregar
+            </button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+<% } %>
+
+<script src="/js/cart-suggested.js"></script>

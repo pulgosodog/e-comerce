@@ -108,7 +108,9 @@ const OrderItem = sequelize.define('OrderItem', {
   unit_price: { type: DataTypes.DECIMAL(10,2) }
 }, {
   tableName: 'order_items',
-  timestamps: false
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: false
 });
 
 // Hero slides for homepage carousel

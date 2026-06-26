@@ -1,0 +1,166 @@
+@startuml E-Commerce Database Architecture
+!define TABLENAME(name) class name << (T, #FFCCCC) >>
+!define PRIMARY_KEY(x) <b><u>PK:</u> x</b>
+!define FOREIGN_KEY(x) <b><u>FK:</u> x</b>
+
+' Tablas del sistema
+TABLENAME(categories) {
+    {field} PRIMARY_KEY(category_id): INTEGER
+    {field} name: VARCHAR(255) NOT NULL
+}
+
+TABLENAME(products) {
+    {field} PRIMARY_KEY(product_id): INTEGER
+    {field} name: VARCHAR(255) NOT NULL
+    {field} description: TEXT
+    {field} price_regular: DECIMAL(10,2) NOT NULL
+    {field} price_sale: DECIMAL(10,2)
+    {field} stock: INTEGER DEFAULT 0
+    {field} FOREIGN_KEY(category_id): INTEGER
+    {field} is_on_sale: BOOLEAN DEFAULT false
+    {field} sale_start_date: DATE
+    {field} sale_end_date: DATE
+    {field} image_url: VARCHAR(255)
+    {field} sku: VARCHAR(100) UNIQUE
+    {field} brand: VARCHAR(100)
+    {field} created_at: DATETIME AUTO
+    {field} updated_at: DATETIME AUTO
+}
+
+TABLENAME(users) {
+    {field} PRIMARY_KEY(id): INTEGER
+    {field} name: VARCHAR(255)
+    {field} email: VARCHAR(255) UNIQUE NOT NULL
+    {field} password_hash: VARCHAR(255)
+    {field} role: VARCHAR(50) DEFAULT 'user'
+    {field} address: VARCHAR(500)
+    {field} phone: VARCHAR(50)
+    {field} lat: DECIMAL(10,8)
+    {field} lng: DECIMAL(11,8)
+}
+
+TABLENAME(carts) {
+    {field} PRIMARY_KEY(cart_id): INTEGER
+    {field} FOREIGN_KEY(user_id): INTEGER
+    {field} created_at: DATETIME AUTO
+    {field} updated_at: DATETIME AUTO
+}
+
+TABLENAME(cart_items) {
+    {field} PRIMARY_KEY(id): INTEGER
+    {field} FOREIGN_KEY(cart_id): INTEGER
+    {field} FOREIGN_KEY(product_id): INTEGER
+    {field} quantity: INTEGER DEFAULT 1
+    {field} unit_price: DECIMAL(10,2)
+}
+
+TABLENAME(orders) {
+    {field} PRIMARY_KEY(order_id): INTEGER
+    {field} FOREIGN_KEY(user_id): INTEGER
+    {field} total: DECIMAL(10,2) NOT NULL
+    {field} tax: DECIMAL(10,2) NOT NULL
+    {field} status: VARCHAR(50) DEFAULT 'pendiente'
+    {field} created_at: DATETIME AUTO
+    {field} updated_at: DATETIME AUTO
+}
+
+TABLENAME(order_items) {
+    {field} PRIMARY_KEY(id): INTEGER
+    {field} FOREIGN_KEY(order_id): INTEGER
+    {field} FOREIGN_KEY(product_id): INTEGER
+    {field} quantity: INTEGER NOT NULL
+    {field} unit_price: DECIMAL(10,2) NOT NULL
+    {field} created_at: DATETIME AUTO ⭐ análisis de ventas
+}
+
+TABLENAME(hero_slides) {
+    {field} PRIMARY_KEY(slide_id): INTEGER
+    {field} title: VARCHAR(255)
+    {field} subtitle: TEXT
+    {field} button_text: VARCHAR(100)
+    {field} button_link: VARCHAR(255)
+    {field} image_url: VARCHAR(255)
+    {field} display_order: INTEGER DEFAULT 0
+}
+
+' Relaciones
+categories "1" --> "N" products : has_many\nFK: category_id
+products "1" --> "N" cart_items : in_cart
+products "1" --> "N" order_items : in_order
+
+users "1" --> "1" carts : has_one
+users "1" --> "N" orders : places
+
+carts "1" --> "N" cart_items : contains
+cart_items "N" --> "1" products : references
+
+orders "1" --> "N" order_items : contains
+order_items "N" --> "1" products : references
+
+note right of categories
+    Categorías de productos
+    Ej: Electrónica, Accesorios
+end note
+
+note right of products
+    Catálogo de productos
+    - Control de stock
+    - Precios regular/oferta
+    - Metadata: SKU, marca
+end note
+
+note right of users
+    Usuarios del sistema
+    Roles: user, admin
+    - Datos de contacto
+    - Coordenadas GPS (lat/lng)
+end note
+
+note right of carts
+    Carritos persistentes
+    (complementa req.session.cart)
+    1 por usuario autenticado
+end note
+
+note right of cart_items
+    Items en carrito activo
+    Guarda precio al agregar
+end note
+
+note right of orders
+    Órdenes confirmadas
+    Estados: pendiente, procesando,
+    enviado, entregado, cancelado
+end note
+
+note right of order_items
+    Detalles de cada orden
+    ⭐ Incluye created_at para
+    análisis de ventas por fecha
+end note
+
+note right of hero_slides
+    Slides del carrusel
+    principal (homepage)
+    Editable desde admin
+end note
+
+' Leyenda
+note bottom
+    **Convenciones:**
+    PK = Primary Key (clave primaria)
+    FK = Foreign Key (clave foránea)
+    AUTO = Timestamp automático
+    ⭐ Campo importante para análisis
+    
+    **Flujo principal:**
+    User → Cart → CartItems → (Checkout) → Order → OrderItems
+    
+    **Timestamps activos:**
+    - products: created_at, updated_at
+    - orders: created_at, updated_at
+    - carts: created_at, updated_at
+    - order_items: created_at ⭐ (para análisis de ventas)
+end note
+
+@enduml
