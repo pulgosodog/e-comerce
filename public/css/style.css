@@ -25,7 +25,10 @@ main{flex:1}
 .nav-actions a, .nav-actions button{background:transparent;border:0;color:#333;padding:6px 10px;border-radius:6px;cursor:pointer}
 .nav-actions .icon{display:inline-block;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .categories{position:relative}
-.categories .dropdown{position:absolute;top:42px;left:0;background:#fff;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;box-shadow:var(--shadow);min-width:180px;display:none;z-index:40}
+.categories .dropdown{position:absolute;top:42px;left:0;background:#fff;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;box-shadow:var(--shadow);min-width:180px;display:none;z-index:40;max-height:0;overflow:hidden;opacity:0;transition:max-height 0.35s ease, opacity 0.35s ease;flex-direction:column;gap:4px}
+.categories .dropdown.open{max-height:500px;opacity:1}
+.dropdown-link{display:block;padding:8px 4px;color:#222;text-decoration:none;border-radius:4px;transition:background-color 0.2s ease}
+.dropdown-link:hover{background-color:#f0f0f0;color:#0f8c6}
 
 .hero{max-width:var(--max-width);margin:20px auto;padding:20px;background:linear-gradient(90deg,#ffff 0%, #ffffff 100%);border-radius:12px;display:flex;gap:20px;align-items:center}
 .hero .hero-text{flex:1}
