@@ -21,8 +21,11 @@
       <div class="metric-title">Ingresos</div>
       <div class="metric-value">$<%= Number(reportData.revenue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) %></div>
       <div class="metric-footer">
-        <span class="trend up">▲</span>
-        <span class="vs-text">ventas del periodo</span>
+        <span class="metric-trend <%= reportData.trends.revenue.direction %>">
+          <i class="fa-solid <%= reportData.trends.revenue.direction === 'up' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down' %>"></i>
+          <%= reportData.trends.revenue.value %>%
+        </span>
+        <span class="vs-text">vs periodo anterior</span>
       </div>
     </article>
 
@@ -30,7 +33,10 @@
       <div class="metric-title">Órdenes</div>
       <div class="metric-value"><%= reportData.totalOrders %></div>
       <div class="metric-footer">
-        <span class="trend up">▲</span>
+        <span class="metric-trend <%= reportData.trends.orders.direction %>">
+          <i class="fa-solid <%= reportData.trends.orders.direction === 'up' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down' %>"></i>
+          <%= reportData.trends.orders.value %>%
+        </span>
         <span class="vs-text">pedidos confirmados</span>
       </div>
     </article>
@@ -39,7 +45,10 @@
       <div class="metric-title">Promedio por orden</div>
       <div class="metric-value">$<%= Number(reportData.averageOrderValue || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) %></div>
       <div class="metric-footer">
-        <span class="trend up">▲</span>
+        <span class="metric-trend <%= reportData.trends.averageOrderValue.direction %>">
+          <i class="fa-solid <%= reportData.trends.averageOrderValue.direction === 'up' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down' %>"></i>
+          <%= reportData.trends.averageOrderValue.value %>%
+        </span>
         <span class="vs-text">valor promedio</span>
       </div>
     </article>
@@ -48,7 +57,10 @@
       <div class="metric-title">Productos vendidos</div>
       <div class="metric-value"><%= reportData.productsSold %></div>
       <div class="metric-footer">
-        <span class="trend up">▲</span>
+        <span class="metric-trend <%= reportData.trends.productsSold.direction %>">
+          <i class="fa-solid <%= reportData.trends.productsSold.direction === 'up' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down' %>"></i>
+          <%= reportData.trends.productsSold.value %>%
+        </span>
         <span class="vs-text">unidades del periodo</span>
       </div>
     </article>
@@ -57,58 +69,115 @@
   <div class="visuals-grid">
     <section class="chart-card">
       <div class="chart-header">
-        <h3 class="chart-title">Productos con stock bajo</h3>
-        <a class="report-link" href="/admin/users">Ver inventario</a>
+        <h3 class="chart-title">Resumen de órdenes</h3>
       </div>
-      <div class="empty-state">Las ventas del periodo seleccionado aparecen en las métricas principales.</div>
+      <div class="chart-wrapper">
+        <canvas id="chartOrderSummary"></canvas>
+      </div>
     </section>
 
     <section class="chart-card">
       <div class="chart-header">
-        <h3 class="chart-title">Distribución por categoría</h3>
-        <a class="report-link" href="/">Ver catálogo</a>
+        <h3 class="chart-title">Resumen de ingresos</h3>
       </div>
-      <% if (reportData.categoryBreakdown && reportData.categoryBreakdown.length) { %>
-        <div class="report-list">
-          <% reportData.categoryBreakdown.forEach((item) => { %>
-            <div class="report-list-item">
-              <strong><%= item.categoryName %></strong>
-              <span><%= item.productCount %> productos</span>
-            </div>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <div class="empty-state">Aún no hay categorías cargadas.</div>
-      <% } %>
+      <div class="chart-wrapper">
+        <canvas id="chartRevenueSummary"></canvas>
+      </div>
     </section>
 
     <section class="chart-card">
       <div class="chart-header">
-        <h3 class="chart-title">Últimas órdenes</h3>
-        <a class="report-link" href="/orders">Ver todas</a>
+        <h3 class="chart-title">Ventas por categoría</h3>
       </div>
-      <% if (reportData.recentOrders && reportData.recentOrders.length) { %>
-        <table class="table-list">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Estado</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% reportData.recentOrders.forEach((order) => { %>
-              <tr>
-                <td><%= order.user?.name || order.user?.email || 'Cliente' %></td>
-                <td><%= order.status %></td>
-                <td>$<%= Number(order.total || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 }) %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <div class="empty-state">No hay órdenes recientes registradas.</div>
-      <% } %>
+      <div class="chart-wrapper">
+        <canvas id="chartVentasCategoria"></canvas>
+      </div>
     </section>
   </div>
 </section>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const dashboardData = <%- JSON.stringify(reportData) %>;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const labels = dashboardData.ordersSeries?.labels || [];
+    const orderValues = dashboardData.ordersSeries?.orderCounts || [];
+    const revenueValues = dashboardData.ordersSeries?.revenueValues || [];
+    const categoryLabels = dashboardData.categoryChart?.labels || [];
+    const categoryValues = dashboardData.categoryChart?.values || [];
+
+    const maxOrders = Math.max(...orderValues, 1);
+    const suggestedMaxY = Math.ceil(maxOrders * 1.15);
+
+    const ctxOrder = document.getElementById('chartOrderSummary').getContext('2d');
+    new Chart(ctxOrder, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: orderValues,
+          borderColor: '#e64a19',
+          backgroundColor: 'rgba(230, 74, 25, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#e64a19',
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, max: suggestedMaxY, ticks: { stepSize: Math.max(1, Math.ceil(suggestedMaxY / 5)) } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    const ctxRevenue = document.getElementById('chartRevenueSummary').getContext('2d');
+    new Chart(ctxRevenue, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: revenueValues,
+          backgroundColor: '#007680',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: value => '$' + value } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    const ctxCat = document.getElementById('chartVentasCategoria').getContext('2d');
+    new Chart(ctxCat, {
+      type: 'doughnut',
+      data: {
+        labels: categoryLabels,
+        datasets: [{
+          data: categoryValues.length ? categoryValues : [1],
+          backgroundColor: ['#007680', '#d81b60', '#7e57c2', '#ffca28', '#1f9d8a', '#4caf50'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { weight: 'bold', size: 11 } } }
+        }
+      }
+    });
+  });
+</script>

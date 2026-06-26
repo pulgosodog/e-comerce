@@ -29,20 +29,15 @@ router.get('/reporte', isAdmin, async (req, res) => {
   try {
     const period = (req.query.period || 'monthly').toString().toLowerCase();
     const now = new Date();
-    let startDate = new Date(now);
+    const durationDays = period === 'weekly' ? 7 : period === 'yearly' ? 365 : 30;
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - durationDays);
 
-    if (period === 'weekly') {
-      startDate.setDate(now.getDate() - 7);
-    } else if (period === 'yearly') {
-      startDate.setFullYear(now.getFullYear() - 1);
-    } else {
-      startDate.setMonth(now.getMonth() - 1);
-    }
+    const previousStartDate = new Date(startDate);
+    previousStartDate.setDate(startDate.getDate() - durationDays);
 
     const ordersInRange = await Order.findAll({
-      where: {
-        created_at: { [Op.gte]: startDate }
-      },
+      where: { created_at: { [Op.gte]: startDate } },
       include: [
         { model: User, as: 'user', attributes: ['name', 'email'] },
         { model: OrderItem, as: 'items', attributes: ['quantity', 'unit_price'] }
@@ -50,33 +45,103 @@ router.get('/reporte', isAdmin, async (req, res) => {
       order: [['created_at', 'DESC']]
     });
 
-    const revenue = ordersInRange.reduce((sum, order) => {
-      const orderValue = Number(order.total || 0);
-      return sum + orderValue;
-    }, 0);
+    const previousOrders = await Order.findAll({
+      where: {
+        created_at: { [Op.gte]: previousStartDate, [Op.lt]: startDate }
+      },
+      attributes: ['order_id', 'total'],
+      include: [{ model: OrderItem, as: 'items', attributes: ['quantity', 'unit_price'] }]
+    });
+
+    const revenue = ordersInRange.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    const previousRevenue = previousOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
 
     const totalOrders = ordersInRange.length;
-    const averageOrderValue = totalOrders > 0
-      ? revenue / totalOrders
-      : 0;
+    const previousOrdersCount = previousOrders.length;
+    const averageOrderValue = totalOrders > 0 ? revenue / totalOrders : 0;
+    const previousAverageOrderValue = previousOrdersCount > 0 ? previousRevenue / previousOrdersCount : 0;
     const productsSold = ordersInRange.reduce((sum, order) => {
       return sum + (order.items || []).reduce((itemsSum, item) => itemsSum + Number(item.quantity || 0), 0);
     }, 0);
+    const previousProductsSold = previousOrders.reduce((sum, order) => {
+      return sum + (order.items || []).reduce((itemsSum, item) => itemsSum + Number(item.quantity || 0), 0);
+    }, 0);
 
-    const categorySummary = await sequelize.query(`
-      SELECT c.category_id, c.name AS category_name, COUNT(p.product_id) AS product_count
-      FROM categories c
-      LEFT JOIN products p ON p.category_id = c.category_id
+    const buildTrend = (current, previous) => {
+      if (previous === 0) return current > 0 ? { value: 100, direction: 'up' } : { value: 0, direction: 'up' };
+      const pct = ((current - previous) / previous) * 100;
+      return { value: Math.abs(Number(pct.toFixed(1))), direction: pct >= 0 ? 'up' : 'down' };
+    };
+
+    const ordersSeries = { labels: [], orderCounts: [], revenueValues: [] };
+    if (period === 'weekly') {
+      for (let i = 6; i >= 0; i -= 1) {
+        const bucketDate = new Date(now);
+        bucketDate.setDate(now.getDate() - i);
+        ordersSeries.labels.push(bucketDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }));
+        ordersSeries.orderCounts.push(0);
+        ordersSeries.revenueValues.push(0);
+      }
+      ordersInRange.forEach(order => {
+        const created = new Date(order.created_at);
+        const diffDays = Math.max(0, Math.min(6, Math.round((now - created) / 86400000)));
+        ordersSeries.orderCounts[6 - diffDays] += 1;
+        ordersSeries.revenueValues[6 - diffDays] += Number(order.total || 0);
+      });
+    } else if (period === 'yearly') {
+      for (let i = 11; i >= 0; i -= 1) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        ordersSeries.labels.push(monthDate.toLocaleDateString('es-ES', { month: 'short' }));
+        ordersSeries.orderCounts.push(0);
+        ordersSeries.revenueValues.push(0);
+      }
+      ordersInRange.forEach(order => {
+        const created = new Date(order.created_at);
+        const monthDiff = Math.max(0, Math.min(11, (now.getFullYear() - created.getFullYear()) * 12 + (now.getMonth() - created.getMonth())));
+        ordersSeries.orderCounts[11 - monthDiff] += 1;
+        ordersSeries.revenueValues[11 - monthDiff] += Number(order.total || 0);
+      });
+    } else {
+      for (let i = 3; i >= 0; i -= 1) {
+        ordersSeries.labels.push(`Sem ${4 - i}`);
+        ordersSeries.orderCounts.push(0);
+        ordersSeries.revenueValues.push(0);
+      }
+      ordersInRange.forEach(order => {
+        const created = new Date(order.created_at);
+        const diffDays = Math.max(0, Math.min(27, Math.round((now - created) / 86400000)));
+        const bucketIndex = Math.min(3, Math.floor(diffDays / 7));
+        ordersSeries.orderCounts[3 - bucketIndex] += 1;
+        ordersSeries.revenueValues[3 - bucketIndex] += Number(order.total || 0);
+      });
+    }
+
+    const categoryRows = await sequelize.query(`
+      SELECT COALESCE(c.name, 'Sin categoría') AS category_name,
+             COUNT(oi.id) AS items_sold,
+             SUM(COALESCE(oi.quantity, 0) * COALESCE(oi.unit_price, 0)) AS revenue
+      FROM order_items oi
+      JOIN orders o ON o.order_id = oi.order_id
+      LEFT JOIN products p ON p.product_id = oi.product_id
+      LEFT JOIN categories c ON c.category_id = p.category_id
+      WHERE o.created_at >= :startDate
       GROUP BY c.category_id, c.name
-      ORDER BY product_count DESC
-    `, { type: sequelize.QueryTypes.SELECT });
+      ORDER BY revenue DESC, items_sold DESC
+      LIMIT 6
+    `, {
+      replacements: { startDate: startDate.toISOString() },
+      type: sequelize.QueryTypes.SELECT
+    });
 
-    const categoryBreakdown = (categorySummary || [])
-      .map(item => ({
-        categoryName: item.category_name || 'Sin categoría',
-        productCount: Number(item.product_count || 0)
-      }))
-      .filter(item => item.productCount > 0);
+    const categoryChart = {
+      labels: (categoryRows || []).map(item => item.category_name || 'Sin categoría'),
+      values: (categoryRows || []).map(item => Number(item.items_sold || 0))
+    };
+
+    const categoryBreakdown = (categoryRows || []).map(item => ({
+      categoryName: item.category_name || 'Sin categoría',
+      productCount: Number(item.items_sold || 0)
+    }));
 
     const body = await renderBody('admin_report.ejs', {
       currentUser: req.session.user,
@@ -87,7 +152,16 @@ router.get('/reporte', isAdmin, async (req, res) => {
         averageOrderValue,
         productsSold,
         categoryBreakdown,
-        recentOrders: ordersInRange.slice(0, 5)
+        recentOrders: ordersInRange.slice(0, 5),
+        ordersSeries,
+        revenueSeries: ordersSeries,
+        categoryChart,
+        trends: {
+          revenue: buildTrend(revenue, previousRevenue),
+          orders: buildTrend(totalOrders, previousOrdersCount),
+          averageOrderValue: buildTrend(averageOrderValue, previousAverageOrderValue),
+          productsSold: buildTrend(productsSold, previousProductsSold)
+        }
       }
     });
 

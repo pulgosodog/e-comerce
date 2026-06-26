@@ -197,16 +197,17 @@ main{flex:1}
 .metric-card{background:var(--card-bg);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
 .metric-title{font-size:15px;color:#4c5b6b;font-weight:600;margin-bottom:10px}
 .metric-value{font-size:28px;font-weight:800;color:#111827;margin-bottom:14px}
-.metric-footer{display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.trend{display:flex;align-items:center;gap:4px;font-weight:700}
-.trend.up{color:#0f8b5f}
-.trend.down{color:#b42318}
+.metric-footer{display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px}
+.metric-trend{display:flex;align-items:center;gap:4px;font-weight:700}
+.metric-trend.up{color:#0f8b5f}
+.metric-trend.down{color:#b42318}
 .vs-text{color:#6b7280}
 .visuals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
 .chart-card{background:var(--card-bg);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
 .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .chart-title{font-size:16px;font-weight:700}
 .report-link{color:#6b7280;text-decoration:none;font-size:13px}
+.chart-wrapper{position:relative;width:100%;height:220px;margin-top:auto}
 .report-list{display:flex;flex-direction:column;gap:10px}
 .report-list-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:10px}
 .report-list-item strong{font-size:15px}
